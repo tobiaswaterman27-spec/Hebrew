@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/srs.test.ts","./src/srs.ts","./src/storage.ts","./src/components/AlphabetView.tsx","./src/components/FlashcardReview.tsx","./src/components/Home.tsx","./src/data/alphabet.ts","./src/data/vocabulary.ts"],"version":"5.9.3"}
