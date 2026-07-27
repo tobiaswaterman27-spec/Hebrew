@@ -1,44 +1,29 @@
 import { useState } from 'react';
-import { AlphabetView } from './components/AlphabetView';
-import { FlashcardReview } from './components/FlashcardReview';
-import { Home } from './components/Home';
-
-export type View = 'home' | 'alphabet' | 'review';
+import { Path } from './components/Path';
+import { LessonRunner } from './components/LessonRunner';
+import { Lesson } from './data/curriculum';
+import { loadProgress, saveProgress, completeLesson, Progress } from './lib/progress';
 
 export function App() {
-  const [view, setView] = useState<View>('home');
+  const [progress, setProgress] = useState<Progress>(() => loadProgress());
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  return (
-    <div className="app">
-      <header className="topbar">
-        <button className="brand" onClick={() => setView('home')}>
-          <span className="brand-heb">א</span> Aleph
-        </button>
-        <nav>
-          <button
-            className={view === 'alphabet' ? 'active' : ''}
-            onClick={() => setView('alphabet')}
-          >
-            Aleph-Bet
-          </button>
-          <button
-            className={view === 'review' ? 'active' : ''}
-            onClick={() => setView('review')}
-          >
-            Review
-          </button>
-        </nav>
-      </header>
+  function handleFinish(lesson: Lesson) {
+    const updated = completeLesson(progress, lesson.id);
+    setProgress(updated);
+    saveProgress(updated);
+    setActiveLesson(null);
+  }
 
-      <main>
-        {view === 'home' && <Home onNavigate={setView} />}
-        {view === 'alphabet' && <AlphabetView />}
-        {view === 'review' && <FlashcardReview />}
-      </main>
+  if (activeLesson) {
+    return (
+      <LessonRunner
+        lesson={activeLesson}
+        onFinish={() => handleFinish(activeLesson)}
+        onQuit={() => setActiveLesson(null)}
+      />
+    );
+  }
 
-      <footer className="foot">
-        Modern Hebrew · spaced-repetition practice · progress saved on this device
-      </footer>
-    </div>
-  );
+  return <Path progress={progress} onStartLesson={setActiveLesson} />;
 }

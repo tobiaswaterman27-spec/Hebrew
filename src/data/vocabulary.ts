@@ -49,6 +49,6 @@ export const VOCABULARY: VocabCard[] = [
   { id: 'medaber', hebrew: 'מְדַבֵּר', translit: 'medaber', english: 'speak (m.)', category: 'Verbs' },
   { id: 'ma-shlomcha', hebrew: 'מַה שְׁלוֹמְךָ', translit: 'ma shlomcha', english: 'how are you? (m.)', category: 'Phrases' },
   { id: 'ma-hashaa', hebrew: 'מַה הַשָּׁעָה', translit: 'ma hashaa', english: 'what time is it?', category: 'Phrases' },
-  { id: ' eyfo', hebrew: 'אֵיפֹה', translit: 'eyfo', english: 'where?', category: 'Phrases' },
+  { id: 'eyfo', hebrew: 'אֵיפֹה', translit: 'eyfo', english: 'where?', category: 'Phrases' },
   { id: 'kama-ze-ole', hebrew: 'כַּמָּה זֶה עוֹלֶה', translit: 'kama ze ole', english: 'how much does it cost?', category: 'Phrases' },
 ];
