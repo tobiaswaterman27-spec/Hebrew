@@ -1,0 +1,911 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0038b8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Yalla">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Yalla — Learn Hebrew by Chatting</title>
+
+<style>
+  :root{
+    --blue:#0038b8;         /* Israeli flag blue */
+    --blue-soft:#e8eeff;
+    --blue-mid:#c9d8ff;
+    --ink:#0e1730;
+    --muted:#5b6580;
+    --white:#ffffff;
+    --bg:#f6f8ff;
+    --line:#dbe3f5;
+    --good:#12855a;
+    --warn:#b8860b;
+    --warn-bg:#fff6df;
+    --radius:16px;
+    --shadow:0 6px 20px rgba(0,56,184,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:680px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative}
+  .he{direction:rtl;unicode-bidi:isolate;font-family:"SBL Hebrew","Times New Roman",serif}
+  button{font-family:inherit;cursor:pointer}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:12px;padding:14px 18px;font-size:16px;font-weight:600;width:100%}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--blue-mid)}
+  .btn.small{width:auto;padding:9px 14px;font-size:14px;border-radius:10px}
+  .btn.sec{background:var(--blue-soft);color:var(--blue)}
+  input,textarea,select{font-family:inherit;font-size:16px;width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+  input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+  label{font-weight:600;font-size:14px;display:block;margin:0 0 6px}
+  .muted{color:var(--muted);font-size:14px;line-height:1.5}
+  .hidden{display:none !important}
+
+  /* ===== Onboarding ===== */
+  #onboard{position:absolute;inset:0;background:#fff;z-index:50;overflow-y:auto}
+  .ob-wrap{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;gap:18px}
+  .brand{font-size:52px;font-weight:800;color:var(--blue);letter-spacing:-1px;line-height:1}
+  .brand-he{font-size:40px;color:var(--ink);margin-top:6px}
+  .flag{font-size:30px}
+  .ob-step{display:none;flex-direction:column;gap:16px}
+  .ob-step.active{display:flex}
+  .choice{display:flex;flex-direction:column;gap:12px}
+  .choice button{text-align:right;background:#fff;border:2px solid var(--line);border-radius:14px;padding:16px;font-size:16px;color:var(--ink);display:flex;justify-content:space-between;align-items:center}
+  .choice button.on{border-color:var(--blue);background:var(--blue-soft)}
+  .choice .sub{display:block;font-size:13px;color:var(--muted);margin-top:3px;font-weight:400}
+  .dotrow{display:flex;gap:7px;justify-content:center;margin-top:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--blue-mid)}
+  .dot.on{background:var(--blue)}
+  .keyhelp{background:var(--blue-soft);border-radius:12px;padding:13px;font-size:13px;color:var(--muted);line-height:1.5}
+
+  /* ===== Header + tabs ===== */
+  header{background:var(--blue);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
+  header .t{font-size:20px;font-weight:800;letter-spacing:-.5px}
+  header .t small{font-weight:600;opacity:.85;font-size:13px;margin-left:6px}
+  header .known{background:rgba(255,255,255,.18);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600}
+  nav{display:flex;background:#fff;border-top:1px solid var(--line)}
+  nav button{flex:1;background:none;border:none;padding:9px 0 11px;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px}
+  nav button .ic{font-size:21px}
+  nav button.on{color:var(--blue)}
+  main{flex:1;overflow-y:auto;position:relative}
+  .page{display:none;padding:16px;min-height:100%}
+  .page.on{display:block}
+
+  /* ===== Chat ===== */
+  #chatPage{display:none;flex-direction:column;height:100%}
+  #chatPage.on{display:flex}
+  .mission{background:var(--warn-bg);border:1px solid #f0dfa8;border-radius:12px;padding:10px 13px;margin:12px 12px 0;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+  .mission b{color:var(--warn)}
+  #chatScroll{flex:1;overflow-y:auto;padding:14px 12px 8px;display:flex;flex-direction:column;gap:12px}
+  .bubble{max-width:86%;padding:11px 13px;border-radius:16px;font-size:17px;line-height:1.5;box-shadow:var(--shadow);position:relative}
+  .bubble.ai{background:#fff;align-self:flex-start;border-bottom-left-radius:5px}
+  .bubble.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+  .bubble.me .hetext{direction:rtl}
+  .hetext{direction:rtl;unicode-bidi:plaintext}
+  .w{cursor:pointer;border-radius:4px;padding:0 1px}
+  .bubble.ai .w:active{background:var(--blue-soft)}
+  .brow{display:flex;gap:8px;margin-top:8px;align-items:center}
+  .icon-btn{background:var(--blue-soft);color:var(--blue);border:none;border-radius:9px;padding:5px 9px;font-size:13px;font-weight:600}
+  .bubble.me .icon-btn{background:rgba(255,255,255,.2);color:#fff}
+  .help-line{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted);display:none}
+  .help-line.show{display:block}
+  .help-line .tl{font-style:italic}
+  .correction{margin-top:9px;background:var(--warn-bg);border-radius:10px;padding:8px 10px;font-size:14px;border:1px solid #f0dfa8}
+  .correction .fix{direction:rtl;unicode-bidi:plaintext;font-weight:600;color:var(--ink)}
+  /* new word spotlight */
+  .spot{background:linear-gradient(180deg,#fff, #f2f6ff);border:1.5px solid var(--blue-mid);border-radius:14px;padding:11px 13px;box-shadow:var(--shadow);align-self:flex-start;max-width:88%}
+  .spot .tag{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px}
+  .spot .big{direction:rtl;font-size:30px;font-weight:800;margin:3px 0 2px}
+  .spot .tl{font-style:italic;color:var(--muted)}
+  .spot .en{font-weight:600;margin-top:2px}
+  .spot .brow{margin-top:9px}
+  .celebrate{align-self:center;text-align:center;background:var(--good);color:#fff;border-radius:14px;padding:14px 18px;box-shadow:var(--shadow);max-width:90%}
+  .celebrate .big{font-size:22px;font-weight:800}
+  .typing{align-self:flex-start;color:var(--muted);font-size:14px;padding:4px 8px}
+  .typing span{animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+
+  /* composer */
+  .suggests{display:flex;gap:8px;overflow-x:auto;padding:0 12px 8px}
+  .chip{white-space:nowrap;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue-mid);border-radius:20px;padding:8px 12px;font-size:14px;flex:0 0 auto}
+  .chip .tl{opacity:.7;font-size:12px;margin-left:5px}
+  .composer{border-top:1px solid var(--line);background:#fff;padding:9px 10px;display:flex;flex-direction:column;gap:8px}
+  .crow{display:flex;gap:8px;align-items:flex-end}
+  .crow textarea{resize:none;max-height:120px;direction:rtl}
+  .send{flex:0 0 auto;width:46px;height:46px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:20px}
+  .ctools{display:flex;gap:8px}
+  .tool{flex:0 0 auto;background:var(--blue-soft);color:var(--blue);border:none;border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600}
+
+  /* on-screen hebrew keyboard */
+  #hebKb{display:none;background:#eef2fb;border-top:1px solid var(--line);padding:7px 6px}
+  #hebKb.show{display:block}
+  .krow{display:flex;gap:4px;justify-content:center;margin-bottom:4px}
+  .key{flex:1;max-width:38px;height:42px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:19px;display:flex;align-items:center;justify-content:center}
+  .key:active{background:var(--blue-soft)}
+  .key.wide{max-width:none;flex:2;font-size:14px;font-weight:600}
+
+  /* ===== cards / lists ===== */
+  .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+  .h1{font-size:22px;font-weight:800;margin:2px 0 2px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .scn{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:11px;box-shadow:var(--shadow)}
+  .scn .emo{font-size:28px}
+  .scn .info{flex:1}
+  .scn .info b{font-size:16px}
+  .scn .info .m{font-size:13px;color:var(--muted);margin-top:2px}
+  .scn .lvl{font-size:11px;color:var(--blue);font-weight:700}
+  .wordrow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .wordrow .he{direction:rtl;font-size:20px;font-weight:700;min-width:70px;text-align:right}
+  .wordrow .meta{flex:1}
+  .wordrow .meta .tl{font-style:italic;color:var(--muted);font-size:13px}
+  .wordrow .meta .en{font-size:15px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .pill.learning{background:var(--warn-bg);color:var(--warn)}
+  .pill.known{background:#e4f6ec;color:var(--good)}
+  .empty{text-align:center;color:var(--muted);padding:40px 20px}
+  .empty .big{font-size:40px;margin-bottom:10px}
+  .stat{display:flex;gap:12px;margin-bottom:14px}
+  .stat .box{flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)}
+  .stat .n{font-size:28px;font-weight:800;color:var(--blue)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .setrow{margin-bottom:18px}
+  .toggle{display:flex;gap:10px}
+  .toggle button{flex:1;padding:12px;border-radius:11px;border:2px solid var(--line);background:#fff;font-weight:600;color:var(--muted)}
+  .toggle button.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+  input[type=range]{width:100%;accent-color:var(--blue)}
+  .rangelbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* review */
+  #reviewCard{text-align:center}
+  #reviewCard .big{direction:rtl;font-size:46px;font-weight:800;margin:18px 0}
+  #reviewCard .reveal{display:none;margin:10px 0 18px}
+  #reviewCard .reveal.show{display:block}
+  #reviewCard .tl{font-style:italic;color:var(--muted)}
+  #reviewCard .en{font-size:22px;font-weight:700;margin-top:4px}
+  .rev-actions{display:flex;gap:10px}
+
+  /* modal */
+  #modal{position:fixed;inset:0;background:rgba(14,23,48,.45);z-index:80;display:none;align-items:flex-end;justify-content:center}
+  #modal.show{display:flex}
+  .sheet{background:#fff;width:100%;max-width:680px;border-radius:20px 20px 0 0;padding:20px 20px 30px;animation:up .2s ease}
+  @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:translateY(0);opacity:1}}
+  .sheet .big{direction:rtl;font-size:38px;font-weight:800;text-align:center;margin:4px 0}
+  .sheet .tl{text-align:center;font-style:italic;color:var(--muted)}
+  .sheet .en{text-align:center;font-size:20px;font-weight:700;margin-top:4px}
+  .sheet .row{display:flex;gap:10px;margin-top:18px}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .banner{background:var(--warn-bg);border:1px solid #f0dfa8;border-radius:12px;padding:11px 13px;font-size:13px;color:#7a5b00;margin-bottom:14px;line-height:1.5}
+  a{color:var(--blue)}
+</style>
+
+<div id="app">
+  <!-- ============ ONBOARDING ============ -->
+  <div id="onboard">
+    <div class="ob-wrap">
+      <div>
+        <div class="brand">Yalla <span class="flag">🇮🇱</span></div>
+        <div class="brand-he he">יאללה</div>
+      </div>
+
+      <!-- step 0 welcome -->
+      <div class="ob-step active" data-step="0">
+        <p class="muted">Learn everyday Modern Hebrew the natural way — by <b>chatting</b> with a friendly AI tutor. New words get shown, said and saved as you go.</p>
+        <button class="btn" onclick="obNext()">Yalla, let's go →</button>
+      </div>
+
+      <!-- step 1 vowels -->
+      <div class="ob-step" data-step="1">
+        <div class="h1">Vowels or no vowels?</div>
+        <p class="muted">Hebrew can be written with little vowel dots (<span class="he">נִקּוּד</span>) or without. You can change this any time in Settings.</p>
+        <div class="choice" id="vowelChoice">
+          <button data-v="off" class="on" onclick="pickVowel('off')">
+            <span><b>Without vowels</b><span class="sub">Like real texts & signs in Israel</span></span><span>אבג</span>
+          </button>
+          <button data-v="on" onclick="pickVowel('on')">
+            <span><b>With vowels (nikud)</b><span class="sub">Easier to read while learning</span></span><span class="he">אָבָּג</span>
+          </button>
+        </div>
+        <button class="btn" onclick="obNext()">Continue →</button>
+      </div>
+
+      <!-- step 2 about you -->
+      <div class="ob-step" data-step="2">
+        <div class="h1">A little about you</div>
+        <p class="muted">So your tutor can chat about things <i>you</i> like. Both optional.</p>
+        <div>
+          <label>What should we call you?</label>
+          <input id="obName" placeholder="Your name" autocomplete="off">
+        </div>
+        <div>
+          <label>Things you're into (hobbies, etc.)</label>
+          <input id="obHobbies" placeholder="e.g. football, music, cooking" autocomplete="off">
+        </div>
+        <button class="btn" onclick="obNext()">Continue →</button>
+      </div>
+
+      <!-- step 3 key -->
+      <div class="ob-step" data-step="3">
+        <div class="h1">Connect your AI 🔌</div>
+        <p class="muted">Yalla uses OpenAI to power the tutor. Paste an OpenAI key <b>once</b> — it's saved only on this device and never shared with anyone.</p>
+        <div>
+          <label>OpenAI API key</label>
+          <input id="obKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="keyhelp">
+          🔑 <b>Where's this from?</b> An OpenAI account at <b>platform.openai.com</b> → API keys → "Create new secret key". It stays on your phone only.<br><br>
+          💡 You can skip for now and add it later in Settings, but the tutor won't reply until it's in.
+        </div>
+        <button class="btn" onclick="finishOnboard()">Start learning →</button>
+        <button class="btn ghost" onclick="finishOnboard(true)">Skip for now</button>
+      </div>
+
+      <div class="dotrow" id="dots"></div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <header>
+    <div class="t">Yalla <small class="he">יאללה</small></div>
+    <div class="known" id="knownBadge">📚 0 words</div>
+  </header>
+
+  <main>
+    <!-- CHAT -->
+    <div id="chatPage" class="on">
+      <div id="missionBar" class="mission hidden"></div>
+      <div id="chatScroll"></div>
+      <div class="suggests" id="suggests"></div>
+      <div id="hebKb"></div>
+      <div class="composer">
+        <div class="ctools">
+          <button class="tool" onclick="toggleKb()">⌨️ <span class="he">עברית</span></button>
+          <button class="tool" onclick="helpAnswer()">💡 Help me answer</button>
+          <button class="tool" id="endScnBtn" onclick="endScenario()" style="display:none">✕ End scenario</button>
+        </div>
+        <div class="crow">
+          <textarea id="msgInput" rows="1" placeholder="Type in Hebrew…  (or English)"></textarea>
+          <button class="send" onclick="sendMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENARIOS -->
+    <div id="scnPage" class="page">
+      <div class="h1">Scenarios 🎭</div>
+      <div class="sub">Little role-plays with a mission. Great when you don't know what to chat about.</div>
+      <div id="scnList"></div>
+    </div>
+
+    <!-- WORDS -->
+    <div id="wordsPage" class="page">
+      <div class="h1">Your words 📚</div>
+      <div class="sub">Every word you meet lands here.</div>
+      <div class="stat">
+        <div class="box"><div class="n" id="stTotal">0</div><div class="l">met</div></div>
+        <div class="box"><div class="n" id="stKnown">0</div><div class="l">known</div></div>
+        <div class="box"><div class="n" id="stDue">0</div><div class="l">to review</div></div>
+      </div>
+      <button class="btn" id="reviewBtn" onclick="startReview()">Review now</button>
+      <div id="wordList" style="margin-top:16px"></div>
+    </div>
+
+    <!-- REVIEW -->
+    <div id="reviewPage" class="page">
+      <div class="card" id="reviewCard">
+        <div class="sub" id="reviewProg">Review</div>
+        <div class="big hetext" id="revWord">—</div>
+        <button class="icon-btn" onclick="speak(reviewQueue[revIdx] && reviewQueue[revIdx].he)">🔊 Hear it</button>
+        <div class="reveal" id="revReveal">
+          <div class="tl" id="revTl"></div>
+          <div class="en" id="revEn"></div>
+        </div>
+        <div style="margin-top:20px">
+          <button class="btn" id="revShowBtn" onclick="revShow()">Show meaning</button>
+          <div class="rev-actions" id="revGrade" style="display:none">
+            <button class="btn ghost" onclick="revGrade(false)">😕 Forgot</button>
+            <button class="btn" onclick="revGrade(true)">😃 Got it</button>
+          </div>
+        </div>
+      </div>
+      <div id="reviewDone" class="empty hidden">
+        <div class="big">🎉</div>
+        <b>Review done!</b>
+        <p class="muted">Nice work. Come back later for more.</p>
+        <button class="btn" onclick="go('words')">Back to words</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="setPage" class="page">
+      <div class="h1">Settings ⚙️</div>
+
+      <div class="setrow">
+        <label>Vowels (nikud)</label>
+        <div class="toggle" id="setVowel">
+          <button data-v="off" onclick="setVowel('off')">Without vowels</button>
+          <button data-v="on" onclick="setVowel('on')">With vowels</button>
+        </div>
+      </div>
+
+      <div class="setrow">
+        <label>Difficulty — <span id="lvlLabel"></span></label>
+        <input type="range" id="setLevel" min="1" max="5" step="1" oninput="setLevel(this.value)">
+        <div class="rangelbl"><span>Keep it simple</span><span>Push me</span></div>
+      </div>
+
+      <div class="setrow">
+        <label>Your name</label>
+        <input id="setName" oninput="saveProfile()" placeholder="Your name">
+      </div>
+      <div class="setrow">
+        <label>Your interests</label>
+        <input id="setHobbies" oninput="saveProfile()" placeholder="football, music…">
+      </div>
+
+      <div class="setrow">
+        <label>OpenAI key</label>
+        <input id="setKey" type="password" placeholder="sk-..." spellcheck="false">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn small sec" onclick="saveKey()">Save key</button>
+          <button class="btn small sec" onclick="toggleKeyView()">👁 Show</button>
+        </div>
+        <p class="muted" style="margin-top:8px">Stored only on this device. If a key ever leaks, roll it at platform.openai.com and paste the new one here.</p>
+      </div>
+
+      <div class="setrow">
+        <label>Tutor voice</label>
+        <button class="btn small sec" onclick="speak('שלום, מה שלומך')">🔊 Test Hebrew voice</button>
+        <p class="muted" style="margin-top:8px">Uses your device's built-in Hebrew voice (free). On iPhone/iPad that's "Carmit". If you hear nothing, add a Hebrew voice in your phone's accessibility settings.</p>
+      </div>
+
+      <div class="setrow">
+        <button class="btn ghost" onclick="resetAll()">Reset everything</button>
+      </div>
+    </div>
+  </main>
+
+  <nav>
+    <button class="on" data-tab="chat" onclick="go('chat')"><span class="ic">💬</span>Chat</button>
+    <button data-tab="scn" onclick="go('scn')"><span class="ic">🎭</span>Scenarios</button>
+    <button data-tab="words" onclick="go('words')"><span class="ic">📚</span>Words</button>
+    <button data-tab="set" onclick="go('set')"><span class="ic">⚙️</span>Settings</button>
+  </nav>
+</div>
+
+<!-- word popup -->
+<div id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="sheet">
+    <div class="tag muted" style="text-align:center;font-weight:700;color:var(--blue)">WORD</div>
+    <div class="big hetext" id="mHe">—</div>
+    <div class="tl" id="mTl"></div>
+    <div class="en" id="mEn"></div>
+    <div class="row">
+      <button class="btn ghost" onclick="speak(document.getElementById('mHe').textContent)">🔊 Hear</button>
+      <button class="btn" id="mSaveBtn" onclick="saveCurrentWord()">＋ Save word</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================= storage ================= */
+const LS = {
+  get(k,d){ try{const v=localStorage.getItem(k); return v==null?d:JSON.parse(v)}catch(e){return d} },
+  set(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+};
+let settings = LS.get('yalla_settings', {onboarded:false, nikud:false, level:2, name:'', hobbies:''});
+let words    = LS.get('yalla_words', []);      // {he,translit,en,box,seen,added,next}
+let dict     = LS.get('yalla_dict', {});       // cache: he -> {translit,en}
+let history  = LS.get('yalla_history', []);    // {role,content,hidden}
+function saveSettings(){ LS.set('yalla_settings', settings) }
+function saveWords(){ LS.set('yalla_words', words); refreshCounters() }
+function saveDict(){ LS.set('yalla_dict', dict) }
+function saveHistory(){ LS.set('yalla_history', history.slice(-40)) }
+function getKey(){ return localStorage.getItem('yalla_key') || '' }
+function setKeyRaw(k){ if(k) localStorage.setItem('yalla_key', k); }
+
+const MODEL = 'gpt-4o-mini';
+
+/* ================= onboarding ================= */
+let obStep = 0;
+const OB_TOTAL = 4;
+function renderDots(){
+  const d=document.getElementById('dots'); d.innerHTML='';
+  for(let i=0;i<OB_TOTAL;i++){const s=document.createElement('div');s.className='dot'+(i===obStep?' on':'');d.appendChild(s)}
+}
+function showStep(){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.toggle('active', +s.dataset.step===obStep));
+  renderDots();
+}
+function obNext(){ if(obStep<OB_TOTAL-1){obStep++;showStep()} }
+function pickVowel(v){
+  settings.nikud = (v==='on');
+  document.querySelectorAll('#vowelChoice button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+}
+function finishOnboard(skip){
+  settings.name = document.getElementById('obName').value.trim();
+  settings.hobbies = document.getElementById('obHobbies').value.trim();
+  const k = document.getElementById('obKey').value.trim();
+  if(k) setKeyRaw(k);
+  settings.onboarded = true;
+  saveSettings();
+  document.getElementById('onboard').classList.add('hidden');
+  bootMain();
+}
+
+/* ================= navigation ================= */
+function go(tab){
+  const map={chat:'chatPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
+  document.querySelectorAll('.page,#chatPage').forEach(p=>p.classList.remove('on'));
+  document.getElementById(map[tab]).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  if(tab==='words'){ renderWords() }
+  if(tab==='scn'){ renderScenarios() }
+  if(tab==='set'){ fillSettings() }
+}
+
+/* ================= toast / modal ================= */
+let toastT;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800)}
+let currentWord=null;
+function openWord(w){
+  currentWord=w;
+  document.getElementById('mHe').textContent=w.he;
+  document.getElementById('mTl').textContent=w.translit||'';
+  document.getElementById('mEn').textContent=w.en||'';
+  const saved = words.some(x=>x.he===w.he);
+  document.getElementById('mSaveBtn').textContent = saved?'✓ Saved':'＋ Save word';
+  document.getElementById('modal').classList.add('show');
+  speak(w.he);
+}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function saveCurrentWord(){ if(currentWord){addWord(currentWord); toast('Saved to your words'); closeModal()} }
+
+/* ================= speech ================= */
+let heVoice=null;
+function loadVoices(){
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  heVoice = vs.find(v=>(v.lang||'').toLowerCase().startsWith('he')) || null;
+}
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+function speak(text){
+  if(!text || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='he-IL'; u.rate=.85;
+  if(heVoice) u.voice=heVoice;
+  speechSynthesis.speak(u);
+}
+
+/* ================= words / SRS ================= */
+const INTERVALS=[0,1,2,4,8,16,32]; // days by box
+function addWord(w){
+  if(!w.he) return;
+  dict[w.he]={translit:w.translit||'',en:w.en||''}; saveDict();
+  let ex=words.find(x=>x.he===w.he);
+  if(ex){ if(!ex.translit)ex.translit=w.translit; if(!ex.en)ex.en=w.en; }
+  else { words.push({he:w.he,translit:w.translit||'',en:w.en||'',box:0,seen:0,added:Date.now(),next:Date.now()}); }
+  saveWords();
+}
+function refreshCounters(){
+  const known=words.filter(w=>w.box>=3).length;
+  const due=words.filter(w=>w.next<=Date.now()).length;
+  document.getElementById('knownBadge').textContent='📚 '+words.length+' word'+(words.length===1?'':'s');
+  const st=id=>document.getElementById(id);
+  if(st('stTotal')){st('stTotal').textContent=words.length; st('stKnown').textContent=known; st('stDue').textContent=due;}
+}
+function renderWords(){
+  refreshCounters();
+  const box=document.getElementById('wordList'); box.innerHTML='';
+  if(!words.length){box.innerHTML='<div class="empty"><div class="big">📚</div><b>No words yet</b><p class="muted">Start chatting and tap any Hebrew word to save it.</p></div>';return}
+  const sorted=[...words].sort((a,b)=>b.added-a.added);
+  sorted.forEach(w=>{
+    const row=document.createElement('div');row.className='wordrow';
+    const known=w.box>=3;
+    row.innerHTML=`<div class="he">${esc(w.he)}</div>
+      <div class="meta"><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div></div>
+      <button class="icon-btn">🔊</button>
+      <span class="pill ${known?'known':'learning'}">${known?'known':'learning'}</span>`;
+    row.querySelector('button').onclick=()=>speak(w.he);
+    box.appendChild(row);
+  });
+}
+
+/* ================= review ================= */
+let reviewQueue=[], revIdx=0;
+function startReview(){
+  reviewQueue=words.filter(w=>w.next<=Date.now());
+  if(!reviewQueue.length) reviewQueue=[...words].sort((a,b)=>a.next-b.next).slice(0,10);
+  if(!reviewQueue.length){toast('No words to review yet');return}
+  reviewQueue.sort(()=>Math.random()-.5);
+  revIdx=0;
+  document.getElementById('reviewDone').classList.add('hidden');
+  document.getElementById('reviewCard').style.display='';
+  go('review'); showRev();
+}
+function showRev(){
+  const w=reviewQueue[revIdx];
+  document.getElementById('revWord').textContent=w.he;
+  document.getElementById('revTl').textContent=w.translit||'';
+  document.getElementById('revEn').textContent=w.en||'';
+  document.getElementById('revReveal').classList.remove('show');
+  document.getElementById('revShowBtn').style.display='';
+  document.getElementById('revGrade').style.display='none';
+  document.getElementById('reviewProg').textContent=`Card ${revIdx+1} of ${reviewQueue.length}`;
+  speak(w.he);
+}
+function revShow(){
+  document.getElementById('revReveal').classList.add('show');
+  document.getElementById('revShowBtn').style.display='none';
+  document.getElementById('revGrade').style.display='flex';
+}
+function revGrade(ok){
+  const w=words.find(x=>x.he===reviewQueue[revIdx].he);
+  if(w){ w.seen++; w.box=ok?Math.min(6,w.box+1):Math.max(0,w.box-1);
+    w.next=Date.now()+INTERVALS[w.box]*86400000; saveWords(); }
+  revIdx++;
+  if(revIdx>=reviewQueue.length){
+    document.getElementById('reviewCard').style.display='none';
+    document.getElementById('reviewDone').classList.remove('hidden');
+  } else showRev();
+}
+
+/* ================= scenarios ================= */
+const SCENARIOS=[
+  {id:'cafe',emo:'☕',title:'At the café',mission:'Order a coffee and ask how much it costs.',role:'a friendly barista at an Israeli café'},
+  {id:'shop',emo:'🛒',title:'At the shop',mission:'Ask for something and find out the price.',role:'a shopkeeper at a small Israeli grocery'},
+  {id:'meet',emo:'👋',title:'Meeting someone',mission:'Say hello, give your name, and say where you are from.',role:'a friendly person meeting the learner for the first time'},
+  {id:'taxi',emo:'🚕',title:'Taking a taxi',mission:'Tell the driver where you want to go and ask if it is far.',role:'a chatty taxi driver in Tel Aviv'},
+  {id:'day', emo:'🏠',title:'Your day',mission:'Tell a friend two things you did today.',role:'a close friend asking how your day was'},
+  {id:'food',emo:'🍽️',title:'At a restaurant',mission:'Ask for the menu and order a main dish.',role:'a waiter at a restaurant in Jerusalem'},
+];
+let scenario=null;
+function renderScenarios(){
+  const box=document.getElementById('scnList'); box.innerHTML='';
+  SCENARIOS.forEach(s=>{
+    const el=document.createElement('div');el.className='scn';
+    el.innerHTML=`<div class="emo">${s.emo}</div><div class="info"><b>${s.title}</b><div class="m">${s.mission}</div></div><div>›</div>`;
+    el.onclick=()=>startScenario(s);
+    box.appendChild(el);
+  });
+}
+function startScenario(s){
+  scenario=s;
+  history=[]; saveHistory();
+  document.getElementById('chatScroll').innerHTML='';
+  const mb=document.getElementById('missionBar');
+  mb.classList.remove('hidden');
+  mb.innerHTML=`<div>🎯 <b>Mission:</b> ${esc(s.mission)}</div>`;
+  document.getElementById('endScnBtn').style.display='';
+  go('chat');
+  primeAndReply(`[Scene start. You are ${s.role}. Open the conversation in Modern Hebrew to begin. The learner's mission is: "${s.mission}". Stay in character. When they clearly complete the mission, set scenario_complete to true and congratulate them.]`);
+}
+function endScenario(){
+  scenario=null;
+  document.getElementById('missionBar').classList.add('hidden');
+  document.getElementById('endScnBtn').style.display='none';
+  history=[]; saveHistory();
+  document.getElementById('chatScroll').innerHTML='';
+  greet();
+}
+
+/* ================= system prompt ================= */
+function levelText(l){
+  return ['',
+    'Use only very short, very simple Hebrew (2–5 words per sentence). Go slowly.',
+    'Use simple everyday Hebrew, short sentences.',
+    'Use normal everyday Hebrew at a comfortable pace.',
+    'Use natural Hebrew with longer sentences and less hand-holding.',
+    'Speak as you would to a native speaker. Challenge them.'
+  ][l];
+}
+function weakWords(){
+  return words.filter(w=>w.box<2).slice(-8).map(w=>w.he).join(', ');
+}
+function systemPrompt(){
+  const nk = settings.nikud ? 'Write all Hebrew WITH nikud (vowel points).' : 'Write all Hebrew WITHOUT nikud (no vowel points).';
+  const weak = weakWords();
+  return `You are a warm, encouraging Modern Hebrew tutor inside an app called "Yalla".
+The learner${settings.name?' is called '+settings.name:''} can read the Hebrew alphabet and knows some basic words. They want to speak everyday, modern, conversational Israeli Hebrew.
+${settings.hobbies?'They are interested in: '+settings.hobbies+'. Bring these topics in when natural.':''}
+Difficulty level ${settings.level}/5: ${levelText(settings.level)}
+${nk}
+
+How to behave:
+- Have a natural back-and-forth conversation in Hebrew. Keep YOUR messages short (1–2 sentences at low levels). Always end with a question or something that invites a reply.
+- Naturally introduce a few genuinely useful NEW words and list them in "new_words" (only words the learner is likely meeting for the first time; 0–3 per turn).
+${weak?'- Try to naturally REUSE these words the learner is still practicing: '+weak+'.':''}
+- If the learner makes a mistake, gently model the correct version in "correction" (do not scold; keep chatting naturally in reply_he).
+- If the learner writes in English or asks "how do I say X", help them, still in the JSON format.
+- If in a scenario and the mission is achieved, set scenario_complete true and celebrate briefly in reply_he.
+
+Reply with ONE JSON object only (no markdown, no backticks) with EXACTLY these keys:
+{
+ "reply_he": "your Hebrew message",
+ "reply_translit": "the same message in easy English letters",
+ "reply_en": "the English translation of your message",
+ "new_words": [{"he":"","translit":"","en":""}],
+ "correction": {"had_mistake": false, "corrected_he":"", "note_en":""},
+ "scenario_complete": false
+}`;
+}
+
+/* ================= OpenAI call ================= */
+async function callAI(extraUserMsg){
+  const key=getKey();
+  if(!key){ return {error:'nokey'} }
+  const msgs=[{role:'system',content:systemPrompt()}];
+  history.forEach(h=>msgs.push({role:h.role,content:h.content}));
+  if(extraUserMsg) msgs.push({role:'user',content:extraUserMsg});
+  try{
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:MODEL,messages:msgs,temperature:.7,response_format:{type:'json_object'}})
+    });
+    if(res.status===401) return {error:'badkey'};
+    if(!res.ok){ const t=await res.text(); return {error:'http',detail:t} }
+    const data=await res.json();
+    let content=data.choices[0].message.content.trim();
+    content=content.replace(/^```json?/i,'').replace(/```$/,'').trim();
+    return {data:JSON.parse(content)};
+  }catch(e){ return {error:'net',detail:String(e)} }
+}
+
+/* ================= chat rendering ================= */
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const chatScroll=()=>document.getElementById('chatScroll');
+function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
+
+function renderHebrewInto(el,text){
+  el.innerHTML='';
+  const parts=String(text).split(/(\s+)/);
+  parts.forEach(p=>{
+    if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}
+    const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');
+    const span=document.createElement('span');span.className='w';span.textContent=p;
+    if(clean) span.onclick=()=>lookupWord(clean,text);
+    el.appendChild(span);
+  });
+}
+function addMe(text){
+  const b=document.createElement('div');b.className='bubble me';
+  const t=document.createElement('div');t.className='hetext';t.textContent=text;
+  b.appendChild(t); chatScroll().appendChild(b); scrollDown();
+}
+function addAI(d){
+  const b=document.createElement('div');b.className='bubble ai';
+  const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,d.reply_he||'');
+  b.appendChild(t);
+  const row=document.createElement('div');row.className='brow';
+  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(d.reply_he);
+  const hp=document.createElement('button');hp.className='icon-btn';hp.textContent='🇬🇧 translation';
+  const help=document.createElement('div');help.className='help-line';
+  help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`;
+  hp.onclick=()=>help.classList.toggle('show');
+  row.appendChild(sp);row.appendChild(hp);
+  b.appendChild(row);b.appendChild(help);
+  // correction
+  if(d.correction && d.correction.had_mistake && d.correction.corrected_he){
+    const c=document.createElement('div');c.className='correction';
+    c.innerHTML=`✏️ Better: <span class="fix">${esc(d.correction.corrected_he)}</span>`+(d.correction.note_en?`<div class="muted" style="margin-top:3px">${esc(d.correction.note_en)}</div>`:'');
+    b.appendChild(c);
+  }
+  chatScroll().appendChild(b);
+  // spotlight new words
+  if(Array.isArray(d.new_words)){
+    d.new_words.forEach(w=>{ if(w&&w.he){ addWord(w); addSpotlight(w) } });
+  }
+  // scenario complete
+  if(d.scenario_complete && scenario){
+    const cel=document.createElement('div');cel.className='celebrate';
+    cel.innerHTML=`<div class="big">✅ Mission complete!</div><div>Nice one — you did it in Hebrew.</div>`;
+    chatScroll().appendChild(cel);
+    document.getElementById('missionBar').classList.add('hidden');
+    document.getElementById('endScnBtn').style.display='none';
+    scenario=null;
+  }
+  scrollDown();
+}
+function addSpotlight(w){
+  const s=document.createElement('div');s.className='spot';
+  s.innerHTML=`<div class="tag">✨ New word</div><div class="big">${esc(w.he)}</div><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div>`;
+  const row=document.createElement('div');row.className='brow';
+  const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Hear it';b.onclick=()=>speak(w.he);
+  row.appendChild(b); s.appendChild(row);
+  chatScroll().appendChild(s);
+}
+function typingOn(){
+  const t=document.createElement('div');t.className='typing';t.id='typing';t.innerHTML='<span>●</span><span>●</span><span>●</span>';
+  chatScroll().appendChild(t);scrollDown();
+}
+function typingOff(){const t=document.getElementById('typing');if(t)t.remove()}
+
+/* main send */
+async function primeAndReply(primeMsg){
+  typingOn();
+  const r=await callAI(primeMsg);
+  typingOff();
+  if(r.error){ showAIError(r); return }
+  history.push({role:'user',content:primeMsg,hidden:true});
+  history.push({role:'assistant',content:r.data.reply_he||''});
+  saveHistory();
+  addAI(r.data);
+  renderSuggests([]);
+}
+async function sendMsg(){
+  const inp=document.getElementById('msgInput');
+  const text=inp.value.trim();
+  if(!text) return;
+  if(!getKey()){ showNoKey(); return }
+  inp.value=''; inp.style.height='auto';
+  addMe(text);
+  history.push({role:'user',content:text});
+  saveHistory();
+  renderSuggests([]);
+  typingOn();
+  const r=await callAI(null);
+  typingOff();
+  if(r.error){ showAIError(r); return }
+  history.push({role:'assistant',content:r.data.reply_he||''});
+  saveHistory();
+  addAI(r.data);
+}
+function showAIError(r){
+  let m='Something went wrong. Try again.';
+  if(r.error==='nokey'||r.error==='badkey'){ showNoKey(r.error==='badkey'); return }
+  if(r.error==='net') m='Network problem — check your connection and try again.';
+  if(r.error==='http') m='OpenAI error. Check your key has credit.';
+  const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';
+  b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;
+  chatScroll().appendChild(b);scrollDown();
+}
+function showNoKey(bad){
+  const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';
+  b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div>
+   <div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;
+  chatScroll().appendChild(b);scrollDown();
+}
+
+/* greeting */
+function greet(){
+  if(!getKey()){ showNoKey(); return }
+  primeAndReply(`[The learner just opened the app. Greet ${settings.name||'them'} warmly by name in simple Modern Hebrew and ask one easy everyday question to start a conversation.]`);
+}
+
+/* ================= tap word lookup ================= */
+async function lookupWord(word,context){
+  if(dict[word]){ openWord({he:word,translit:dict[word].translit,en:dict[word].en}); return }
+  openWord({he:word,translit:'…',en:'looking up…'});
+  const key=getKey();
+  if(!key){ document.getElementById('mEn').textContent='Add your key in Settings to look up words.'; return }
+  try{
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:MODEL,temperature:0,response_format:{type:'json_object'},
+        messages:[{role:'system',content:'You translate single Modern Hebrew words for a learner. Reply with JSON {"translit":"easy english letters","en":"short english meaning"}.'},
+                  {role:'user',content:`Word: "${word}"  (from: "${context}")`}]})
+    });
+    const data=await res.json();
+    const d=JSON.parse(data.choices[0].message.content);
+    dict[word]={translit:d.translit||'',en:d.en||''}; saveDict();
+    if(currentWord&&currentWord.he===word){
+      currentWord={he:word,translit:d.translit,en:d.en};
+      document.getElementById('mTl').textContent=d.translit||'';
+      document.getElementById('mEn').textContent=d.en||'';
+    }
+  }catch(e){ document.getElementById('mEn').textContent='Could not look up right now.' }
+}
+
+/* ================= help me answer ================= */
+async function helpAnswer(){
+  if(!getKey()){ showNoKey(); return }
+  const key=getKey();
+  renderSuggests([],true);
+  try{
+    const ctx=history.filter(h=>!h.hidden).slice(-6).map(h=>(h.role==='assistant'?'Tutor: ':'Me: ')+h.content).join('\n');
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:MODEL,temperature:.5,response_format:{type:'json_object'},
+        messages:[{role:'system',content:`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`},
+                  {role:'user',content:ctx||'Start of chat.'}]})
+    });
+    const data=await res.json();
+    const d=JSON.parse(data.choices[0].message.content);
+    renderSuggests(d.suggestions||[]);
+  }catch(e){ renderSuggests([]); toast('Could not get suggestions') }
+}
+function renderSuggests(list,loading){
+  const box=document.getElementById('suggests');box.innerHTML='';
+  if(loading){box.innerHTML='<div class="chip">💡 thinking…</div>';return}
+  (list||[]).forEach(s=>{
+    const c=document.createElement('button');c.className='chip';
+    c.innerHTML=`<span class="he">${esc(s.he)}</span><span class="tl">${esc(s.en||'')}</span>`;
+    c.onclick=()=>{document.getElementById('msgInput').value=s.he;box.innerHTML='';document.getElementById('msgInput').focus()};
+    box.appendChild(c);
+  });
+}
+
+/* ================= hebrew keyboard ================= */
+const KB=[['ק','ר','א','ט','ו','ן','ם','פ'],
+          ['ש','ד','ג','כ','ע','י','ח','ל','ך','ף'],
+          ['ז','ס','ב','ה','נ','מ','צ','ת','ץ']];
+function buildKb(){
+  const kb=document.getElementById('hebKb');kb.innerHTML='';
+  KB.forEach(row=>{
+    const r=document.createElement('div');r.className='krow';
+    row.forEach(ch=>{const k=document.createElement('button');k.className='key';k.textContent=ch;k.onclick=()=>kbType(ch);r.appendChild(k)});
+    kb.appendChild(r);
+  });
+  const r=document.createElement('div');r.className='krow';
+  const space=document.createElement('button');space.className='key wide';space.textContent='רווח';space.onclick=()=>kbType(' ');
+  const bs=document.createElement('button');bs.className='key wide';bs.textContent='⌫';bs.onclick=kbBack;
+  r.appendChild(space);r.appendChild(bs);kb.appendChild(r);
+}
+function kbType(ch){const i=document.getElementById('msgInput');i.value+=ch;i.focus()}
+function kbBack(){const i=document.getElementById('msgInput');i.value=i.value.slice(0,-1)}
+function toggleKb(){document.getElementById('hebKb').classList.toggle('show')}
+
+/* ================= settings ================= */
+function fillSettings(){
+  document.querySelectorAll('#setVowel button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='on')===settings.nikud));
+  document.getElementById('setLevel').value=settings.level;
+  updateLvlLabel();
+  document.getElementById('setName').value=settings.name||'';
+  document.getElementById('setHobbies').value=settings.hobbies||'';
+  document.getElementById('setKey').value=getKey();
+}
+function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
+function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
+function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
+function saveProfile(){settings.name=document.getElementById('setName').value;settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
+function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
+let keyShown=false;
+function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
+function resetAll(){
+  if(!confirm('Reset everything — words, chat and settings on this device?'))return;
+  ['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_key'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+/* ================= boot ================= */
+function bootMain(){
+  buildKb();
+  refreshCounters();
+  fillSettings();
+  // restore chat or greet
+  const alive=history.filter(h=>!h.hidden);
+  if(alive.length){
+    document.getElementById('chatScroll').innerHTML='';
+    // re-render last known messages (text only, simple)
+    alive.slice(-12).forEach(h=>{
+      if(h.role==='user') addMe(h.content);
+      else { const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);
+        const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b);}
+    });
+    scrollDown();
+  } else {
+    greet();
+  }
+}
+// textarea autogrow + enter to send
+document.getElementById('msgInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
+document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
+
+// start
+if(settings.onboarded){
+  document.getElementById('onboard').classList.add('hidden');
+  bootMain();
+}else{
+  document.querySelectorAll('#vowelChoice button').forEach(b=>b.classList.toggle('on',b.dataset.v==='off'));
+  renderDots(); showStep();
+}
+</script>

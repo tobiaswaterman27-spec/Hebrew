@@ -1,0 +1,12 @@
+{
+  "name": "Yalla — Learn Hebrew",
+  "short_name": "Yalla",
+  "description": "Learn everyday Modern Hebrew by chatting with an AI tutor.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0038b8",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
