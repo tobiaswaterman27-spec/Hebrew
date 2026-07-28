@@ -16,6 +16,20 @@ It's a single self-contained web page — no install, no build step. Open it in 
 - ⌨️ **Pop-up Hebrew keyboard** — type Hebrew even without a Hebrew phone keyboard.
 - 🔤 **Vowels on/off** (nikud) — your choice, changeable any time.
 - 🔊 **Free Hebrew voice** — uses your device's built-in Hebrew voice (e.g. "Carmit" on iPhone/iPad).
+- 📖 **Word packs** — short ordered lessons (Greetings, People, Verbs, Food…) that feed the chat.
+- 🚹🚺 **Gender-aware** — teaches the correct Hebrew forms for a boy or a girl.
+- 🔤 **Verb tables** — tap a verb to see all its present-tense forms.
+- 🧠 **Smart difficulty** — the tutor only uses words you already know, plus one new word at a time.
+
+## No sound? Add a Hebrew voice
+
+The tutor's voice uses your device's built-in Hebrew text-to-speech (free). If you tap 🔊 and hear nothing, your device probably doesn't have a Hebrew voice installed yet:
+
+- **iPhone/iPad:** Settings → Accessibility → Spoken Content → Voices → **add Hebrew (Carmit)**.
+- **Android:** Settings → Accessibility → Text-to-speech output → install a **Hebrew** voice.
+- **Computer:** add a Hebrew language/voice pack in your system settings.
+
+On phones, speech also needs one tap in the app first to "wake up" — that's normal.
 
 ## Getting started
 
