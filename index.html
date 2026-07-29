@@ -229,6 +229,7 @@
         <div class="h1">A little about you</div>
         <p class="muted">So your tutor can chat about things <i>you</i> like. Both optional.</p>
         <div><label>What should we call you?</label><input id="obName" placeholder="Your name" autocomplete="off"></div>
+        <div><label>Your name in Hebrew <span class="muted" style="font-weight:400">(optional — so it's spelled right)</span></label><input id="obHeName" class="he" placeholder="שם" autocomplete="off" spellcheck="false" style="direction:rtl;text-align:right"></div>
         <div><label>Things you're into</label><input id="obHobbies" placeholder="e.g. football, music, cooking" autocomplete="off"></div>
         <button class="btn" onclick="obNext()">Continue →</button>
       </div>
@@ -361,6 +362,7 @@
       <div class="setrow"><label>I am a…</label><div class="toggle" id="setGender"><button data-g="m" onclick="setGender('m')">Boy 🚹</button><button data-g="f" onclick="setGender('f')">Girl 🚺</button><button data-g="x" onclick="setGender('x')">Rather not</button></div></div>
       <div class="setrow"><label>Difficulty — <span id="lvlLabel"></span></label><input type="range" id="setLevel" min="1" max="5" step="1" oninput="setLevel(this.value)"><div class="rangelbl"><span>Keep it simple</span><span>Push me</span></div></div>
       <div class="setrow"><label>Your name</label><input id="setName" oninput="saveProfile()" placeholder="Your name"></div>
+      <div class="setrow"><label>Your name in Hebrew</label><input id="setHeName" class="he" oninput="saveProfile()" placeholder="שם" spellcheck="false" style="direction:rtl;text-align:right"><p class="muted" style="margin-top:6px">The tutor will spell your name exactly like this.</p></div>
       <div class="setrow"><label>Your interests</label><input id="setHobbies" oninput="saveProfile()" placeholder="football, music…"></div>
       <div class="setrow"><label>OpenAI key</label><input id="setKey" type="password" placeholder="sk-..." spellcheck="false">
         <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small sec" onclick="saveKey()">Save key</button><button class="btn small sec" onclick="toggleKeyView()">👁 Show</button></div>
@@ -399,8 +401,10 @@
 "use strict";
 /* ================= storage ================= */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',hobbies:'',tipShown:false,packs:{},voice:'auto'});
+let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',heName:'',hobbies:'',tipShown:false,packs:{},voice:'auto',msgsSinceNew:0,newWordTarget:6});
 if(!settings.voice)settings.voice='auto';
+if(!settings.newWordTarget)settings.newWordTarget=5+Math.floor(Math.random()*6);
+if(settings.msgsSinceNew==null)settings.msgsSinceNew=0;
 if(!settings.packs)settings.packs={};
 let words=LS.get('yalla_words',[]);
 let dict=LS.get('yalla_dict',{});
@@ -519,6 +523,7 @@ function pickVowel(v){settings.nikud=(v==='on');document.querySelectorAll('#vowe
 function pickGender(g){settings.gender=g;document.querySelectorAll('#genderChoice button').forEach(b=>b.classList.toggle('on',b.dataset.g===g))}
 function finishOnboard(skip){
   settings.name=document.getElementById('obName').value.trim();
+  settings.heName=document.getElementById('obHeName').value.trim();
   settings.hobbies=document.getElementById('obHobbies').value.trim();
   const k=document.getElementById('obKey').value.trim();if(k)setKeyRaw(k);
   settings.onboarded=true;saveSettings();
@@ -729,19 +734,22 @@ function weakWords(){return words.filter(w=>w.box<2).slice(-8).map(w=>w.he).join
 function systemPrompt(){
   const nk=settings.nikud?'Write all Hebrew WITH nikud (vowel points).':'Write all Hebrew WITHOUT nikud (no vowel points).';
   const known=knownList();const weak=weakWords();
+  const allowNew=(settings.msgsSinceNew||0)>=(settings.newWordTarget||6);
+  const nameLine=settings.heName?`The learner's name in Hebrew is "${settings.heName}". Always write their name exactly like that; never change the spelling. `:(settings.name?`The learner is called ${settings.name}. If you write their name, use normal English letters, never Hebrew or Arabic script. `:'');
   return `You are a warm, patient Modern Hebrew tutor in an app called "Yalla".
-${settings.name?'The learner is called '+settings.name+'. ':''}They can read Hebrew letters and want everyday spoken Israeli Hebrew.
+${nameLine}They can read Hebrew letters and want everyday spoken Israeli Hebrew.
 ${genderText()}
 ${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural. ':''}
 Difficulty ${settings.level}/5: ${levelText(settings.level)}
 ${nk}
 
-SCRIPT — very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet — no Arabic letters at all. Do NOT try to spell the learner's name in Hebrew letters; if you use their name, write it in normal English letters${settings.name?' (e.g. "'+settings.name+'")':''}.
+SCRIPT — very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet — no Arabic letters at all.
 
 MOST IMPORTANT RULE — keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
-- Build your Hebrew almost entirely from words they know. Introduce AT MOST ONE new Hebrew word per message, and you MUST put that new word in "new_words".
-- If they know few/no words, speak mostly in English and teach just one small Hebrew word or phrase.
+- Reuse the words they ALREADY know as much as possible. New words should be RARE — only about one every 5 to 10 messages, NOT every message.
+- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps — if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, do NOT introduce any new words. Use ONLY words the learner already knows. "new_words" must be empty ([]).'}
+- If they know few/no words, speak mostly in English and lean on their learned words.
 - Keep every message very short (usually one short sentence). Always end by inviting a reply.
 ${weak?'- Gently reuse these words they are still practising: '+weak+'.':''}
 
@@ -810,11 +818,17 @@ async function getReply(extra){
   }
   return r;
 }
-async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);renderSuggests([])}
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data)}
+function updateNewWordCounter(d){
+  const introduced=Array.isArray(d.new_words)&&d.new_words.some(w=>w&&w.he);
+  if(introduced){settings.msgsSinceNew=0;settings.newWordTarget=5+Math.floor(Math.random()*6)}
+  else{settings.msgsSinceNew=(settings.msgsSinceNew||0)+1}
+  saveSettings();
+}
+async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
+async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data)}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem — check your connection and try again.';if(r.error==='http')m='OpenAI error — check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
-function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':''}${hint}]`)}
+function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`)}
 
 /* ================= tap lookup ================= */
 async function lookupWord(word,context){
@@ -875,13 +889,13 @@ function fillSettings(){
   document.querySelectorAll('#setVowel button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='on')===settings.nikud));
   document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
   document.getElementById('setLevel').value=settings.level;updateLvlLabel();
-  document.getElementById('setName').value=settings.name||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
+  document.getElementById('setName').value=settings.name||'';document.getElementById('setHeName').value=settings.heName||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
 }
 function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
 function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
 function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
-function saveProfile(){settings.name=document.getElementById('setName').value;settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
+function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
 function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
 let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
 function resetAll(){if(!confirm('Reset everything — words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
@@ -891,7 +905,10 @@ function bootMain(){
   buildKb();rebuildKnown();refreshCounters();fillSettings();
   const alive=history.filter(h=>!h.hidden);
   if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
-  else greet();
+  else{
+    const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
+    if(brandNew)openPack(PACKS[0]);else greet();
+  }
 }
 document.getElementById('msgInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
 document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
