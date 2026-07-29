@@ -336,7 +336,10 @@
       <div class="setrow"><label>OpenAI key</label><input id="setKey" type="password" placeholder="sk-..." spellcheck="false">
         <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small sec" onclick="saveKey()">Save key</button><button class="btn small sec" onclick="toggleKeyView()">👁 Show</button></div>
         <p class="muted" style="margin-top:8px">Stored only on this device. If a key ever leaks, roll it at platform.openai.com and paste the new one here.</p></div>
-      <div class="setrow"><label>Tutor voice</label><button class="btn small sec" onclick="testVoice()">🔊 Test Hebrew voice</button><p class="muted" style="margin-top:8px">Uses your device's built-in Hebrew voice (free). <b>Heard nothing?</b> Your device may not have a Hebrew voice yet:<br>• <b>iPhone/iPad:</b> Settings → Accessibility → Spoken Content → Voices → add <b>Hebrew (Carmit)</b>.<br>• <b>Android:</b> Settings → Accessibility → Text-to-speech → install a Hebrew voice.<br>• <b>Computer:</b> add a Hebrew language/voice in your system settings.</p></div>
+      <div class="setrow"><label>Voice</label>
+        <div class="toggle" id="setVoice"><button data-vo="auto" onclick="setVoiceMode('auto')">Auto</button><button data-vo="ai" onclick="setVoiceMode('ai')">AI voice 🔊</button><button data-vo="device" onclick="setVoiceMode('device')">Phone (free)</button></div>
+        <button class="btn small sec" style="margin-top:10px" onclick="testVoice()">🔊 Test voice</button>
+        <p class="muted" style="margin-top:8px"><b>Can't hear anything? Pick "AI voice".</b> It works on any phone — OpenAI makes the sound (using your key), so it doesn't need a Hebrew voice installed. Costs a tiny amount per phrase, and repeats are free.<br><br><b>Auto</b> = use your phone's Hebrew voice if it has one, otherwise the AI voice. <b>Phone (free)</b> = your device's Hebrew voice only (no cost, but needs a Hebrew voice installed).</p></div>
       <div class="setrow"><button class="btn ghost" onclick="resetAll()">Reset everything</button></div>
     </div>
   </main>
@@ -368,7 +371,8 @@
 "use strict";
 /* ================= storage ================= */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',hobbies:'',tipShown:false,packs:{}});
+let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',hobbies:'',tipShown:false,packs:{},voice:'auto'});
+if(!settings.voice)settings.voice='auto';
 if(!settings.packs)settings.packs={};
 let words=LS.get('yalla_words',[]);
 let dict=LS.get('yalla_dict',{});
@@ -509,18 +513,37 @@ function saveCurrentWord(){if(currentWord){addWord(currentWord);toast('Saved to 
 
 /* ================= speech ================= */
 let heVoice=null,ttsUnlocked=false;
+const aiAudioCache={};let aiAudioEl=null;
 function isHe(v){const l=(v.lang||'').toLowerCase();return l.startsWith('he')||l.startsWith('iw')}
 function loadVoices(){const vs=window.speechSynthesis?speechSynthesis.getVoices():[];heVoice=vs.find(isHe)||null}
 if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-// Mobile browsers need a real user gesture before speech works — unlock on first tap.
 function unlockTTS(){if(ttsUnlocked||!('speechSynthesis'in window))return;ttsUnlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}loadVoices()}
 document.addEventListener('pointerdown',unlockTTS,{once:true});
-function speak(text){if(!text||!('speechSynthesis'in window))return;if(!heVoice)loadVoices();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';u.rate=.85;if(heVoice)u.voice=heVoice;speechSynthesis.speak(u)}
+function deviceSpeak(text){if(!('speechSynthesis'in window))return false;if(!heVoice)loadVoices();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';u.rate=.85;if(heVoice)u.voice=heVoice;speechSynthesis.speak(u);return true}
+async function speakAI(text){
+  const key=getKey();if(!key){deviceSpeak(text);return}
+  if(aiAudioCache[text]){playUrl(aiAudioCache[text]);return}
+  try{
+    const res=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'nova',input:text,instructions:'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.'})});
+    if(!res.ok){deviceSpeak(text);if(res.status===401)toast('AI voice: check your key');return}
+    const url=URL.createObjectURL(await res.blob());aiAudioCache[text]=url;playUrl(url);
+  }catch(e){deviceSpeak(text)}
+}
+function playUrl(url){try{if(aiAudioEl){aiAudioEl.pause()}aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
+function speak(text){
+  if(!text)return;
+  const mode=settings.voice||'auto';
+  if(mode==='ai'){speakAI(text);return}
+  if(mode==='device'){deviceSpeak(text);return}
+  if(!heVoice)loadVoices();
+  if(heVoice)deviceSpeak(text);else if(getKey())speakAI(text);else deviceSpeak(text);
+}
 function testVoice(){
+  const mode=settings.voice||'auto';loadVoices();
+  if(mode==='ai'||((mode==='auto')&&!heVoice&&getKey())){toast('Testing AI voice…');speakAI('שלום, מה שלומך');return}
   if(!('speechSynthesis'in window)){toast('This browser has no speech support');return}
-  loadVoices();
-  speak('שלום, מה שלומך');
-  setTimeout(()=>{loadVoices();if(!heVoice)toast('No Hebrew voice on this device yet — see the note below to add one');},400);
+  deviceSpeak('שלום, מה שלומך');
+  setTimeout(()=>{loadVoices();if(!heVoice)toast(getKey()?'No phone voice found — switch Voice to "AI voice" above':'No Hebrew voice on this device — add one, or add your key and use AI voice');},400);
 }
 
 /* ================= words / SRS ================= */
@@ -765,11 +788,13 @@ function toggleKb(){document.getElementById('hebKb').classList.toggle('show')}
 function fillSettings(){
   document.querySelectorAll('#setVowel button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='on')===settings.nikud));
   document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
+  document.querySelectorAll('#setVoice button').forEach(b=>b.classList.toggle('on',b.dataset.vo===(settings.voice||'auto')));
   document.getElementById('setLevel').value=settings.level;updateLvlLabel();
   document.getElementById('setName').value=settings.name||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
 }
 function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
+function setVoiceMode(m){settings.voice=m;saveSettings();fillSettings();toast(m==='ai'?'AI voice on — try 🔊 Test':m==='device'?'Phone voice on':'Auto voice on')}
 function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
 function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
 function saveProfile(){settings.name=document.getElementById('setName').value;settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
