@@ -426,7 +426,8 @@ function rebuildKnown(){
 function inSet(set,w){const n=normHe(w);if(!n||n.length<2)return true;if(set.has(n))return true;const pre='והבלכמש';if(n.length>2&&pre.indexOf(n[0])>=0&&set.has(n.slice(1)))return true;return false}
 function isKnownWord(w){return inSet(knownSet,w)}
 function isMastered(w){return inSet(masteredSet,w)}
-function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&!isKnownWord(p))c++});return c}
+function isHeb(w){return /[֐-׿ﬀ-ﭏ]/.test(w)}
+function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&isHeb(n)&&!isKnownWord(p))c++});return c}
 function saveDict(){LS.set('yalla_dict',dict)}
 function saveHistory(){LS.set('yalla_history',history.slice(-40))}
 function saveGrammar(){LS.set('yalla_grammar',grammar)}
@@ -743,6 +744,7 @@ function systemPrompt(){
   const nk=settings.nikud?'Write all Hebrew WITH nikud (vowel points).':'Write all Hebrew WITHOUT nikud (no vowel points).';
   const known=knownList();const weak=weakWords();
   const allowNew=(settings.msgsSinceNew||0)>=(settings.newWordTarget||6);
+  const recentSaid=history.filter(h=>h.role==='assistant').slice(-4).map(h=>h.content).filter(Boolean);
   const nameLine=settings.heName?`The learner's name in Hebrew is "${settings.heName}". Always write their name exactly like that; never change the spelling. `:(settings.name?`The learner is called ${settings.name}. If you write their name, use normal English letters, never Hebrew or Arabic script. `:'');
   return `You are a warm, patient Modern Hebrew tutor in an app called "Yalla".
 ${nameLine}They can read Hebrew letters and want everyday spoken Israeli Hebrew.
@@ -761,11 +763,18 @@ MOST IMPORTANT RULE — keep it understandable:
 - Keep every message very short (usually one short sentence).
 ${weak?'- Gently reuse these words they are still practising: '+weak+'.':''}
 
-CONVERSATION STYLE — be a real chat partner, not a quiz:
-- FIRST, react to what the learner just said — acknowledge or answer it (e.g. "יופי!" great, "נחמד" nice, "אה, כן", "וואו", "בסדר") — before anything else. Show you heard them.
-- VARY every single turn. Do NOT keep asking "מה שלומך" (how are you) — ask it at most ONCE in a whole conversation. Read the recent messages and always pick something DIFFERENT.
-- Rotate between simple moves: react to their answer, ask their name, ask if they like something (a food, or a hobby they mentioned), ask a tiny what/where question, say one small thing about yourself, or just make a warm comment. NOT every message needs a question — sometimes just respond.
-- Recombine the words they know in new ways so it never feels repetitive.
+CONVERSATION STYLE — you are a warm human chat partner, NOT a quiz bot. This is the most important part of your job:
+- Every single reply MUST do TWO things in order: (1) REACT to what they just said, then (2) move the chat forward with something NEW.
+- (1) REACT — never ignore their message. Be happy for good news ("יופי!" = great, "אחלה" = awesome), curious about what they share ("אה, נחמד!" = oh, nice!), sympathetic if needed. Answer any question they asked you.
+- (2) NEW — then add a comment or ask about a DIFFERENT topic than last time.
+- English is your friend: freely use English for the warm/reacting parts and to explain, especially early on. Keep the HEBREW to words they know (that is what the vocab rules above are about) — English does not count as "new words".
+- HARD RULES: Never send a reply that is only a greeting or only "מה שלומך". Ask "how are you" AT MOST ONCE, ever. Never repeat a question or sentence you already used.
+- Progress through topics one at a time, coming back to their interests (${settings.hobbies||'their hobbies'}): their name → where they live → family → a food they like → a hobby → their day → simple plans → feelings.
+- Also share tiny things about "yourself" so it feels mutual, not an interrogation.
+${recentSaid.length?'- You ALREADY said these recently — do NOT repeat them, clearly say something different:\n'+recentSaid.map(r=>'   · "'+r+'"').join('\n'):''}
+
+GOOD example (do this): learner says "אני טוב" → you reply: "יופי! Glad to hear it 😊 What's your name? (איך קוראים לך?)". Next turn you react to their name, then ask something else.
+BAD example (never do this): "שלום! מה שלומך?" and then later again "מה שלומך?".
 
 Also:
 - If the learner makes a mistake, gently model the correct version in "correction" (never scold).
@@ -783,7 +792,7 @@ async function callAI(extraUserMsg){
   history.forEach(h=>msgs.push({role:h.role,content:h.content}));
   if(extraUserMsg)msgs.push({role:'user',content:extraUserMsg});
   try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:MODEL,messages:msgs,temperature:.7,response_format:{type:'json_object'}})});
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:MODEL,messages:msgs,temperature:.9,response_format:{type:'json_object'}})});
     if(res.status===401)return{error:'badkey'};
     if(!res.ok){return{error:'http',detail:await res.text()}}
     const data=await res.json();let c=data.choices[0].message.content.trim().replace(/^```json?/i,'').replace(/```$/,'').trim();
@@ -800,7 +809,7 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');const span=document.createElement('span');span.className='w'+(clean&&!isMastered(p)?' neww':'');span.textContent=p;if(clean)span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+(!isMastered(p)?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
   const b=document.createElement('div');b.className='bubble ai';
@@ -828,7 +837,7 @@ async function getReply(extra){
   if(r.error)return r;
   const thresh=settings.level<=2?1:(settings.level===3?2:99);
   if(countUnknown(r.data.reply_he||'')>thresh){
-    const r2=await callAI(`[Your last reply used too many words the learner does not know. They know ONLY these Hebrew words: ${knownList().join('; ')||'(almost none yet)'}. Rewrite it to be much simpler and shorter — use ONLY words they know, plus AT MOST one new word (put any new word in new_words). Same JSON format.]`);
+    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said — just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Do not turn it into a bare "how are you". Same JSON format.]`);
     if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))return r2;
   }
   return r;
