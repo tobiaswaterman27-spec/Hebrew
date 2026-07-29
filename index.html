@@ -831,8 +831,25 @@ function updateNewWordCounter(d){
   else{settings.msgsSinceNew=(settings.msgsSinceNew||0)+1}
   saveSettings();
 }
+let chatTurns=0;
+function maybeNudgePack(){
+  if(scenario)return;
+  const next=PACKS.find(p=>!settings.packs[p.id]);
+  if(!next)return;
+  chatTurns++;
+  if(chatTurns>=10){chatTurns=0;addPackNudge(next)}
+}
+function addPackNudge(pack){
+  const el=document.createElement('div');el.className='spot';el.style.borderColor='var(--good)';
+  el.innerHTML=`<div class="tag" style="color:var(--good)">📖 Ready for more?</div><div style="font-weight:700;margin:4px 0">Want to learn new words? Next pack: ${pack.emo} ${esc(pack.title)}</div>`;
+  const row=document.createElement('div');row.className='brow';
+  const yes=document.createElement('button');yes.className='icon-btn';yes.style.cssText='background:var(--good);color:#fff';yes.textContent="Yes, let's go →";yes.onclick=()=>{el.remove();openPack(pack)};
+  const no=document.createElement('button');no.className='icon-btn';no.textContent='Not now';no.onclick=()=>{el.remove()};
+  row.appendChild(yes);row.appendChild(no);el.appendChild(row);
+  chatScroll().appendChild(el);scrollDown();
+}
 async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data)}
+async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack()}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem — check your connection and try again.';if(r.error==='http')m='OpenAI error — check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
 function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`)}
