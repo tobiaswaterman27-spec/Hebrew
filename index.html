@@ -645,6 +645,8 @@ ${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural
 Difficulty ${settings.level}/5: ${levelText(settings.level)}
 ${nk}
 
+SCRIPT — very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet — no Arabic letters at all. Do NOT try to spell the learner's name in Hebrew letters; if you use their name, write it in normal English letters${settings.name?' (e.g. "'+settings.name+'")':''}.
+
 MOST IMPORTANT RULE — keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
 - Build your Hebrew almost entirely from words they know. Introduce AT MOST ONE new Hebrew word per message, and you MUST put that new word in "new_words".
@@ -711,7 +713,7 @@ async function primeAndReply(primeMsg){typingOn();const r=await callAI(primeMsg)
 async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await callAI(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data)}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem — check your connection and try again.';if(r.error==='http')m='OpenAI error — check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
-function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';primeAndReply(`[The learner just opened the app. Greet ${settings.name||'them'} warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${hint}]`)}
+function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':''}${hint}]`)}
 
 /* ================= tap lookup ================= */
 async function lookupWord(word,context){
