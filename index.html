@@ -158,7 +158,20 @@
   #reviewCard .en{font-size:22px;font-weight:700;margin-top:4px}
   .rev-actions{display:flex;gap:10px}
   .progbar{height:7px;background:var(--blue-soft);border-radius:10px;overflow:hidden;margin:4px 0 6px}
-  .progbar div{height:100%;background:var(--blue);width:0}
+  .progbar div{height:100%;background:var(--blue);width:0;transition:width .2s}
+  .bubble.ai .w.neww{color:var(--blue);font-weight:800;border-bottom:2px solid var(--blue)}
+  .pr-prompt{text-align:center;font-size:36px;font-weight:800;margin:14px 0;direction:rtl}
+  .pr-prompt.en{font-size:26px;direction:ltr}
+  .pr-opt{display:block;width:100%;text-align:center;background:#fff;border:2px solid var(--line);border-radius:12px;padding:15px;margin-bottom:10px;font-size:18px;color:var(--ink)}
+  .pr-opt .he{direction:rtl;font-weight:700}
+  .pr-opt.correct{border-color:var(--good);background:#e4f6ec}
+  .pr-opt.wrong{border-color:#d33;background:#ffeaea}
+  .pr-opt:disabled{opacity:.7}
+  .pr-fb{text-align:center;font-weight:700;margin:8px 0;min-height:22px}
+  #buildTray{display:none;flex-wrap:wrap;gap:6px;padding:8px;background:#eef2fb;border-top:1px solid var(--line);max-height:150px;overflow-y:auto}
+  #buildTray.show{display:flex}
+  .tile{background:#fff;border:1px solid var(--blue-mid);color:var(--ink);border-radius:9px;padding:9px 12px;font-size:17px;direction:rtl}
+  .tile:active{background:var(--blue-soft)}
 
   #modal{position:fixed;inset:0;background:rgba(14,23,48,.45);z-index:80;display:none;align-items:flex-end;justify-content:center}
   #modal.show{display:flex}
@@ -245,11 +258,13 @@
       <div id="missionBar" class="mission hidden"></div>
       <div id="chatScroll"></div>
       <div class="suggests" id="suggests"></div>
+      <div id="buildTray"></div>
       <div id="hebKb"></div>
       <div class="composer">
         <div class="ctools">
+          <button class="tool" onclick="toggleBuild()">🧱 Build</button>
           <button class="tool" onclick="toggleKb()">⌨️ <span class="he">עברית</span></button>
-          <button class="tool" onclick="helpAnswer()">💡 Help me answer</button>
+          <button class="tool" onclick="helpAnswer()">💡 Help</button>
           <button class="tool" id="endScnBtn" onclick="endScenario()" style="display:none">✕ End</button>
         </div>
         <div class="crow">
@@ -284,6 +299,20 @@
         <button class="btn" onclick="practicePack()">💬 Practise in chat</button>
         <button class="btn ghost" style="margin-top:10px" onclick="go('learn')">Back to packs</button>
       </div>
+    </div>
+
+    <!-- PACK PRACTICE -->
+    <div id="practicePage" class="page">
+      <div class="card">
+        <div class="sub" id="prTitle">Practice</div>
+        <div class="progbar"><div id="prProg"></div></div>
+        <div class="pr-prompt" id="prPrompt">—</div>
+        <div id="prListen" style="text-align:center;margin-bottom:10px"></div>
+        <div id="prOpts"></div>
+        <div class="pr-fb" id="prFb"></div>
+        <button class="btn" id="prNext" style="display:none" onclick="prNextQ()">Next →</button>
+      </div>
+      <button class="btn ghost small" style="width:auto" onclick="go('learn')">Quit</button>
     </div>
 
     <!-- SCENARIOS -->
@@ -379,7 +408,13 @@ let history=LS.get('yalla_history',[]);
 let grammar=LS.get('yalla_grammar',[]);
 let verbCache=LS.get('yalla_verbs',{});
 function saveSettings(){LS.set('yalla_settings',settings)}
-function saveWords(){LS.set('yalla_words',words);refreshCounters()}
+function saveWords(){LS.set('yalla_words',words);rebuildKnown();refreshCounters()}
+/* known-word detection (client-side, so difficulty doesn't depend on the AI) */
+let knownSet=new Set();
+function normHe(w){return String(w).replace(/[֑-ׇ]/g,'').replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'').trim()}
+function rebuildKnown(){knownSet=new Set();words.forEach(w=>{const f=normHe(w.he);if(f)knownSet.add(f);String(w.he).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)knownSet.add(n)})})}
+function isKnownWord(w){const n=normHe(w);if(!n||n.length<2)return true;if(knownSet.has(n))return true;const pre='והבלכמש';if(n.length>2&&pre.indexOf(n[0])>=0&&knownSet.has(n.slice(1)))return true;return false}
+function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&!isKnownWord(p))c++});return c}
 function saveDict(){LS.set('yalla_dict',dict)}
 function saveHistory(){LS.set('yalla_history',history.slice(-40))}
 function saveGrammar(){LS.set('yalla_grammar',grammar)}
@@ -408,6 +443,15 @@ const PACKS=[
    {he:'אנחנו',translit:'anachnu',en:'we'},
    {he:'שם',translit:'shem',en:'name'},
    {he:'חבר',translit:'chaver',en:'friend'}]},
+ {id:'phrases',emo:'💬',title:'Handy phrases',words:[
+   {he:'מה שלומך',translit:'ma shlomcha / shlomech',en:'how are you?'},
+   {he:'אני בסדר',translit:'ani beseder',en:"I'm fine / okay"},
+   {he:'מה נשמע',translit:'ma nishma',en:"what's up?"},
+   {he:'איך קוראים לך',translit:'eich korim lecha / lach',en:"what's your name?"},
+   {he:'נעים מאוד',translit:'naim meod',en:'nice to meet you'},
+   {he:'כמה זה עולה',translit:'kama ze ole',en:'how much is it?'},
+   {he:'אני רוצה',translit:'ani rotze / rotza',en:'I want / I would like'},
+   {he:'אני לא מבין',translit:'ani lo mevin / mevina',en:"I don't understand"}]},
  {id:'question',emo:'❓',title:'Little words',words:[
    {he:'מה',translit:'ma',en:'what'},
    {he:'מי',translit:'mi',en:'who'},
@@ -483,7 +527,7 @@ function finishOnboard(skip){
 
 /* ================= navigation ================= */
 function go(tab){
-  const map={chat:'chatPage',learn:'learnPage',pack:'packPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
+  const map={chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
   document.querySelectorAll('.page,#chatPage').forEach(p=>p.classList.remove('on'));
   document.getElementById(map[tab]).classList.add('on');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
@@ -600,18 +644,56 @@ function showPackCard(){
   document.getElementById('studyHe').textContent=w.he;
   document.getElementById('studyTl').textContent=w.translit;
   document.getElementById('studyEn').textContent=w.en;
-  document.getElementById('studyNext').textContent=(packIdx===currentPack.words.length-1)?'Finish ✓':'Next →';
+  document.getElementById('studyNext').textContent=(packIdx===currentPack.words.length-1)?'Practise →':'Next →';
   speak(w.he);
 }
-function packNext(){if(packIdx<currentPack.words.length-1){packIdx++;showPackCard()}else finishPack()}
-function finishPack(){
+function packNext(){if(packIdx<currentPack.words.length-1){packIdx++;showPackCard()}else startPractice()}
+function finishPack(score,total){
   currentPack.words.forEach(w=>addWord(w,true));
   settings.packs[currentPack.id]=true;saveSettings();
+  go('pack');
   document.getElementById('studyCard').style.display='none';
-  const nextP=PACKS[PACKS.findIndex(p=>p.id===currentPack.id)+1];
-  document.getElementById('packDoneMsg').textContent=nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('You learned '+currentPack.words.length+' words. That\'s the last pack — nice!');
   document.getElementById('packDone').classList.remove('hidden');
+  const nextP=PACKS[PACKS.findIndex(p=>p.id===currentPack.id)+1];
+  const sc=(score!=null)?`You scored ${score}/${total}. `:'';
+  document.getElementById('packDoneMsg').textContent=sc+(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last pack — nice work!'));
 }
+
+/* ===== pack practice games ===== */
+let prQueue=[],prIdx=0,prScore=0;
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
+function startPractice(){
+  const ws=currentPack.words;prQueue=[];
+  ws.forEach((w,i)=>{
+    const type=['he2en','listen','en2he'][i%3];
+    const distract=shuffle(ws.filter(x=>x.he!==w.he)).slice(0,3);
+    if(type==='en2he'){const opts=shuffle([w,...distract]);prQueue.push({mode:'en2he',prompt:w.en,opts:opts.map(x=>({label:x.he,he:true,correct:x.he===w.he}))});}
+    else{const opts=shuffle([w,...distract]);prQueue.push({mode:type,prompt:w.he,audio:w.he,listen:(type==='listen'),opts:opts.map(x=>({label:x.en,he:false,correct:x.en===w.en}))});}
+  });
+  prQueue=shuffle(prQueue);prIdx=0;prScore=0;go('practice');showPr();
+}
+function showPr(){
+  const q=prQueue[prIdx];
+  document.getElementById('prTitle').textContent=currentPack.emo+' '+currentPack.title+' — practice';
+  document.getElementById('prProg').style.width=Math.round(prIdx/prQueue.length*100)+'%';
+  const pr=document.getElementById('prPrompt'),listen=document.getElementById('prListen');listen.innerHTML='';
+  if(q.listen){pr.className='pr-prompt';pr.textContent='🔊';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Play again';b.onclick=()=>speak(q.audio);listen.innerHTML='<div class="muted" style="margin-bottom:6px">What did you hear?</div>';listen.appendChild(b);speak(q.audio);}
+  else if(q.mode==='en2he'){pr.className='pr-prompt en';pr.textContent=q.prompt;listen.innerHTML='<div class="muted">Which is it in Hebrew?</div>';}
+  else{pr.className='pr-prompt hetext';pr.textContent=q.prompt;listen.innerHTML='<div class="muted">What does it mean?</div>';}
+  const opts=document.getElementById('prOpts');opts.innerHTML='';
+  q.opts.forEach(o=>{const btn=document.createElement('button');btn.className='pr-opt';btn.innerHTML=o.he?`<span class="he">${esc(o.label)}</span>`:esc(o.label);btn.onclick=()=>prAnswer(btn,o);opts.appendChild(btn)});
+  document.getElementById('prFb').textContent='';
+  document.getElementById('prNext').style.display='none';
+}
+function prAnswer(btn,o){
+  const opts=document.getElementById('prOpts'),q=prQueue[prIdx];
+  const btns=opts.querySelectorAll('button');btns.forEach((b,i)=>{b.disabled=true;if(q.opts[i].correct)b.classList.add('correct')});
+  const fb=document.getElementById('prFb');
+  if(o.correct){prScore++;fb.textContent='✓ Correct!';fb.style.color='var(--good)'}
+  else{btn.classList.remove('correct');btn.classList.add('wrong');fb.textContent='✗ Not quite';fb.style.color='#d33'}
+  document.getElementById('prNext').style.display='';
+}
+function prNextQ(){prIdx++;if(prIdx>=prQueue.length)finishPack(prScore,prQueue.length);else showPr()}
 function practicePack(){
   history=[];saveHistory();document.getElementById('chatScroll').innerHTML='';
   scenario=null;document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';
@@ -696,7 +778,7 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');const span=document.createElement('span');span.className='w';span.textContent=p;if(clean)span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');const span=document.createElement('span');span.className='w'+(clean&&!isKnownWord(p)?' neww':'');span.textContent=p;if(clean)span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
   const b=document.createElement('div');b.className='bubble ai';
@@ -718,8 +800,18 @@ function addSpotlight(w){const s=document.createElement('div');s.className='spot
 function typingOn(){const t=document.createElement('div');t.className='typing';t.id='typing';t.innerHTML='<span>●</span><span>●</span><span>●</span>';chatScroll().appendChild(t);scrollDown()}
 function typingOff(){const t=document.getElementById('typing');if(t)t.remove()}
 
-async function primeAndReply(primeMsg){typingOn();const r=await callAI(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);renderSuggests([])}
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await callAI(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data)}
+async function getReply(extra){
+  let r=await callAI(extra);
+  if(r.error)return r;
+  const thresh=settings.level<=2?1:(settings.level===3?2:99);
+  if(countUnknown(r.data.reply_he||'')>thresh){
+    const r2=await callAI(`[Your last reply used too many words the learner does not know. They know ONLY these Hebrew words: ${knownList().join('; ')||'(almost none yet)'}. Rewrite it to be much simpler and shorter — use ONLY words they know, plus AT MOST one new word (put any new word in new_words). Same JSON format.]`);
+    if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))return r2;
+  }
+  return r;
+}
+async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);renderSuggests([])}
+async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data)}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem — check your connection and try again.';if(r.error==='http')m='OpenAI error — check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
 function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':''}${hint}]`)}
@@ -768,7 +860,15 @@ const KB=[['ק','ר','א','ט','ו','ן','ם','פ'],['ש','ד','ג','כ','ע','�
 function buildKb(){const kb=document.getElementById('hebKb');kb.innerHTML='';KB.forEach(row=>{const r=document.createElement('div');r.className='krow';row.forEach(ch=>{const k=document.createElement('button');k.className='key';k.textContent=ch;k.onclick=()=>kbType(ch);r.appendChild(k)});kb.appendChild(r)});const r=document.createElement('div');r.className='krow';const sp=document.createElement('button');sp.className='key wide';sp.textContent='רווח';sp.onclick=()=>kbType(' ');const bs=document.createElement('button');bs.className='key wide';bs.textContent='⌫';bs.onclick=kbBack;r.appendChild(sp);r.appendChild(bs);kb.appendChild(r)}
 function kbType(ch){const i=document.getElementById('msgInput');i.value+=ch;i.focus()}
 function kbBack(){const i=document.getElementById('msgInput');i.value=i.value.slice(0,-1)}
-function toggleKb(){document.getElementById('hebKb').classList.toggle('show')}
+function toggleKb(){const k=document.getElementById('hebKb');const show=!k.classList.contains('show');k.classList.toggle('show',show);if(show)document.getElementById('buildTray').classList.remove('show')}
+function toggleBuild(){const t=document.getElementById('buildTray');const show=!t.classList.contains('show');t.classList.toggle('show',show);if(show){document.getElementById('hebKb').classList.remove('show');renderBuildTiles()}}
+function renderBuildTiles(){
+  const t=document.getElementById('buildTray');t.innerHTML='';
+  const recent=[...words].sort((a,b)=>b.added-a.added).slice(0,40);
+  if(!recent.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first — then tap them here to build sentences without typing.</div>';return}
+  recent.forEach(w=>{const c=document.createElement('button');c.className='tile';c.textContent=w.he;c.onclick=()=>{const i=document.getElementById('msgInput');i.value+=(i.value&&!i.value.endsWith(' ')?' ':'')+w.he;i.focus()};t.appendChild(c)});
+  const bs=document.createElement('button');bs.className='tile';bs.style.borderColor='#d9a';bs.textContent='⌫';bs.onclick=()=>{const i=document.getElementById('msgInput');i.value=i.value.replace(/\s*\S+\s*$/,'')};t.appendChild(bs);
+}
 
 /* ================= settings ================= */
 function fillSettings(){
@@ -788,7 +888,7 @@ function resetAll(){if(!confirm('Reset everything — words, packs, chat and set
 
 /* ================= boot ================= */
 function bootMain(){
-  buildKb();refreshCounters();fillSettings();
+  buildKb();rebuildKnown();refreshCounters();fillSettings();
   const alive=history.filter(h=>!h.hidden);
   if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
   else greet();
