@@ -278,8 +278,22 @@
     <!-- LEARN (packs) -->
     <div id="learnPage" class="page">
       <div class="h1">Learn 📖</div>
-      <div class="sub">Little word packs, in order. Each one you finish, the tutor can use in chat.</div>
+      <div class="sub">Learn words in packs and read little stories — it all feeds your chat.</div>
+      <button class="btn" onclick="go('stories')" style="margin-bottom:18px">📚 Read a story</button>
+      <div class="section-h">Starter packs</div>
       <div id="packList"></div>
+      <div class="section-h">More topics 🌍</div>
+      <div class="sub">Hundreds more words. Tap a topic to learn a set — come back to go deeper any time.</div>
+      <div id="themeList"></div>
+    </div>
+
+    <!-- STORIES -->
+    <div id="storiesPage" class="page">
+      <div class="h1">Reading 📚</div>
+      <div class="sub">Short stories using words you know. Tap any word — blue ones are new.</div>
+      <div id="storyArea"><div class="empty"><div class="big">📖</div><b>Ready to read?</b><p class="muted">Tap below for a little story at your level.</p></div></div>
+      <button class="btn" id="storyBtn" onclick="newStory()">✨ New story</button>
+      <button class="btn ghost small" style="width:auto;margin-top:10px" onclick="go('learn')">Back</button>
     </div>
 
     <!-- PACK STUDY -->
@@ -541,13 +555,13 @@ function finishOnboard(skip){
 
 /* ================= navigation ================= */
 function go(tab){
-  const map={chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
+  const map={chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',stories:'storiesPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
   document.querySelectorAll('.page,#chatPage').forEach(p=>p.classList.remove('on'));
   document.getElementById(map[tab]).classList.add('on');
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===(tab==='stories'||tab==='pack'||tab==='practice'?'learn':tab)));
   if(tab==='words')renderWords();
   if(tab==='scn')renderScenarios();
-  if(tab==='learn')renderLearn();
+  if(tab==='learn'){renderLearn();renderThemes()}
   if(tab==='set')fillSettings();
 }
 
@@ -668,9 +682,12 @@ function finishPack(score,total){
   go('pack');
   document.getElementById('studyCard').style.display='none';
   document.getElementById('packDone').classList.remove('hidden');
-  const nextP=PACKS[PACKS.findIndex(p=>p.id===currentPack.id)+1];
+  const isGen=String(currentPack.id).indexOf(':')>=0;
+  const idx=PACKS.findIndex(p=>p.id===currentPack.id);
+  const nextP=(!isGen&&idx>=0)?PACKS[idx+1]:null;
   const sc=(score!=null)?`You scored ${score}/${total}. `:'';
-  document.getElementById('packDoneMsg').textContent=sc+(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last pack — nice work!'));
+  const tail=isGen?('You learned '+currentPack.words.length+' new words! Tap the topic again any time to go deeper.'):(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last starter pack — nice work! Try the topic packs below.'));
+  document.getElementById('packDoneMsg').textContent=sc+tail;
 }
 
 /* ===== pack practice games ===== */
@@ -716,6 +733,107 @@ function practicePack(){
   primeAndReply(`[The learner just learned this word pack: ${wlist}. Start a very simple, friendly Hebrew conversation that uses ONLY these words plus words they already know. Keep it tiny and encouraging.]`);
 }
 
+/* ===== AI-generated topic packs ===== */
+let genpacks=LS.get('yalla_genpacks',{});
+const THEMES=[
+ {id:'animals',emo:'🐾',title:'Animals'},{id:'colours',emo:'🎨',title:'Colours'},
+ {id:'family',emo:'👪',title:'Family'},{id:'feelings',emo:'😊',title:'Feelings & moods'},
+ {id:'body',emo:'💪',title:'The body'},{id:'clothes',emo:'👕',title:'Clothes'},
+ {id:'foodmore',emo:'🍎',title:'More food'},{id:'drinks',emo:'🥤',title:'Drinks'},
+ {id:'fruitveg',emo:'🥕',title:'Fruit & veg'},{id:'house',emo:'🏠',title:'Around the house'},
+ {id:'kitchen',emo:'🍳',title:'Kitchen'},{id:'city',emo:'🏙️',title:'In the city'},
+ {id:'nature',emo:'🌳',title:'Nature'},{id:'weather',emo:'🌦️',title:'Weather'},
+ {id:'school',emo:'🎒',title:'School'},{id:'jobs',emo:'👷',title:'Jobs'},
+ {id:'sports',emo:'⚽',title:'Sports'},{id:'music',emo:'🎵',title:'Music'},
+ {id:'tech',emo:'📱',title:'Technology'},{id:'travel',emo:'✈️',title:'Travel'},
+ {id:'transport',emo:'🚌',title:'Getting around'},{id:'shopping',emo:'🛍️',title:'Shopping'},
+ {id:'money',emo:'💰',title:'Money'},{id:'timemore',emo:'⏰',title:'Time & dates'},
+ {id:'numbersbig',emo:'💯',title:'Bigger numbers'},{id:'verbs2',emo:'🏃',title:'More verbs'},
+ {id:'verbs3',emo:'🤸',title:'Even more verbs'},{id:'adjectives',emo:'📐',title:'Describing things'},
+ {id:'opposites',emo:'↔️',title:'Opposites'},{id:'questions2',emo:'❔',title:'Asking questions'},
+ {id:'health',emo:'🩺',title:'Health'},{id:'love',emo:'❤️',title:'Love & friendship'},
+ {id:'holidays',emo:'🕎',title:'Holidays'},{id:'eatingout',emo:'🍽️',title:'Eating out'},
+ {id:'directions',emo:'🧭',title:'Directions'},{id:'office',emo:'💼',title:'Work & office'},
+ {id:'hobbies',emo:'🎯',title:'Hobbies'},{id:'garden',emo:'🌻',title:'Garden & plants'},
+ {id:'beach',emo:'🏖️',title:'At the beach'},{id:'car',emo:'🚗',title:'Cars & driving'},
+ {id:'internet',emo:'💻',title:'Phone & internet'},{id:'states',emo:'😴',title:'Everyday states'},
+ {id:'slang',emo:'😎',title:'Israeli slang'},{id:'cooking',emo:'👩‍🍳',title:'Cooking words'},
+ {id:'town',emo:'🏘️',title:'Places in town'},
+];
+function themeLevelDone(theme){let n=0;while(settings.packs[theme.id+':'+(n+1)])n++;return n}
+function renderThemes(){
+  const box=document.getElementById('themeList');box.innerHTML='';
+  THEMES.forEach(theme=>{
+    const done=themeLevelDone(theme);
+    const el=document.createElement('div');el.className='pack';
+    el.innerHTML=`<div class="emo">${theme.emo}</div><div class="info"><b>${esc(theme.title)}</b><div class="m">${done?('✓ '+done+' set'+(done>1?'s':'')+' learned — tap for more'):'tap to learn a set'}</div></div><div class="st">${done?'＋':'›'}</div>`;
+    el.onclick=()=>openThemeLevel(theme);
+    box.appendChild(el);
+  });
+}
+async function generatePack(theme,level){
+  const genId=theme.id+':'+level;
+  if(genpacks[genId])return genpacks[genId];
+  const avoid=words.map(w=>w.he).slice(-160).join(', ');
+  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
+  if(!d||!Array.isArray(d.words))return null;
+  const ws=d.words.filter(w=>w&&w.he&&w.en).slice(0,16);
+  if(!ws.length)return null;
+  genpacks[genId]=ws;LS.set('yalla_genpacks',genpacks);
+  return ws;
+}
+async function openThemeLevel(theme){
+  const level=themeLevelDone(theme)+1,genId=theme.id+':'+level;
+  go('pack');
+  document.getElementById('packDone').classList.add('hidden');
+  document.getElementById('studyCard').style.display='';
+  document.getElementById('studyTitle').textContent=theme.emo+' '+theme.title;
+  document.getElementById('studyProg').style.width='0%';
+  document.getElementById('studyHe').textContent='…';
+  document.getElementById('studyEn').textContent='';
+  document.getElementById('studyNext').style.display='none';
+  document.getElementById('studyTl').textContent='✨ Generating your words…';
+  if(!getKey()){document.getElementById('studyTl').textContent='Add your OpenAI key in Settings to generate topic packs.';return}
+  let ws=genpacks[genId]||await generatePack(theme,level);
+  if(!ws||!ws.length){document.getElementById('studyTl').textContent='Could not generate right now — go back and try again.';return}
+  currentPack={id:genId,emo:theme.emo,title:theme.title+' '+level,words:ws};packIdx=0;
+  document.getElementById('studyNext').style.display='';
+  showPackCard();
+}
+
+/* ===== AI reading stories ===== */
+let currentStory=null;
+async function newStory(){
+  if(!getKey()){toast('Add your OpenAI key in Settings first');return}
+  const area=document.getElementById('storyArea');
+  area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
+  const btn=document.getElementById('storyBtn');btn.disabled=true;
+  const known=knownList();
+  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few — keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":""}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
+  btn.disabled=false;btn.textContent='✨ Another story';
+  if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
+  currentStory=d;renderStory(d);
+  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)addWord(w)});
+}
+function renderStory(d){
+  const area=document.getElementById('storyArea');area.innerHTML='';
+  const card=document.createElement('div');card.className='card';
+  const h=document.createElement('div');h.className='h1 hetext';renderHebrewInto(h,d.title_he||'סיפור');card.appendChild(h);
+  if(d.title_en){const s=document.createElement('div');s.className='sub';s.textContent=d.title_en;card.appendChild(s)}
+  const full=(d.sentences||[]).map(s=>s.he).join(' ');
+  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Play whole story';playAll.style.marginBottom='6px';playAll.onclick=()=>speak(full);card.appendChild(playAll);
+  (d.sentences||[]).forEach(s=>{
+    const p=document.createElement('div');p.style.cssText='margin:12px 0 0;padding-bottom:11px;border-bottom:1px solid var(--line)';
+    const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
+    const row=document.createElement('div');row.className='brow';
+    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.he);
+    const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.textContent=s.en||'';
+    const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
+    row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
+  });
+  area.appendChild(card);
+}
+
 /* ================= scenarios ================= */
 const SCENARIOS=[
  {id:'cafe',emo:'☕',title:'At the café',mission:'Order a coffee and ask how much it costs.',role:'a friendly barista at an Israeli café'},
@@ -730,6 +848,15 @@ const SCENARIOS=[
  {id:'market',emo:'🍅',title:'At the market',mission:'Buy some fruit and ask for the price per kilo.',role:'a lively fruit seller at the Carmel market'},
  {id:'weather',emo:'☀️',title:'The weather',mission:'Say what the weather is like today.',role:'a neighbour chatting about the weather'},
  {id:'doctor',emo:'🩺',title:'Not feeling well',mission:'Tell the pharmacist you have a headache.',role:'a kind pharmacist'},
+ {id:'hotel',emo:'🏨',title:'At the hotel',mission:'Check in and ask where breakfast is.',role:'a hotel receptionist'},
+ {id:'phone',emo:'📞',title:'Call a friend',mission:'Phone a friend and ask what they are doing.',role:'a friend answering the phone'},
+ {id:'bakery',emo:'🥐',title:'At the bakery',mission:'Buy bread and something sweet.',role:'a baker at a neighbourhood bakery'},
+ {id:'lost',emo:'🧳',title:'Lost something',mission:'Say you lost your bag and describe it.',role:'a helpful worker at a lost-and-found'},
+ {id:'birthday',emo:'🎂',title:'A birthday',mission:'Wish someone happy birthday and ask how old they are.',role:'a friend celebrating their birthday'},
+ {id:'school',emo:'🏫',title:'At school',mission:'Tell a classmate what your favourite subject is.',role:'a friendly classmate'},
+ {id:'pets',emo:'🐶',title:'Pets',mission:'Tell someone about an animal you like.',role:'a neighbour who loves animals'},
+ {id:'invite',emo:'🍕',title:'Order pizza',mission:'Order a pizza and say what you want on it.',role:'someone taking your order at a pizza place'},
+ {id:'compliment',emo:'😄',title:'Small talk',mission:'Give someone a compliment and ask about their day.',role:'a warm, chatty acquaintance'},
 ];
 let scenario=null;
 function renderScenarios(){const box=document.getElementById('scnList');box.innerHTML='';SCENARIOS.forEach(s=>{const el=document.createElement('div');el.className='scn';el.innerHTML=`<div class="emo">${s.emo}</div><div class="info"><b>${s.title}</b><div class="m">${s.mission}</div></div><div>›</div>`;el.onclick=()=>startScenario(s);box.appendChild(el)})}
@@ -889,16 +1016,24 @@ async function showVerbForms(){
   if(verbCache[word]){renderVerb(verbCache[word]);return}
   if(!getKey()){toast('Add your key in Settings first');return}
   area.innerHTML='<p class="muted" style="text-align:center;margin-top:14px">Loading forms…</p>';
-  const d=await simpleAI(`You are a Hebrew teacher. For the given Hebrew word, if it is a verb, give its PRESENT tense forms. ${settings.nikud?'Use nikud.':'No nikud.'} Reply JSON {"is_verb":true,"infinitive_he":"","infinitive_en":"","forms":[{"who_en":"I (m)","he":"","translit":""},{"who_en":"I (f)","he":"","translit":""},{"who_en":"you (m)","he":"","translit":""},{"who_en":"you (f)","he":"","translit":""},{"who_en":"he","he":"","translit":""},{"who_en":"she","he":"","translit":""},{"who_en":"we","he":"","translit":""},{"who_en":"they","he":"","translit":""}]}. If it is NOT a verb, reply {"is_verb":false}.`,`Word: "${word}"`,0);
+  const d=await simpleAI(`You are a Hebrew teacher. For the given Hebrew word, if it is a verb, give its conjugations in PRESENT, PAST and FUTURE. ${settings.nikud?'Use nikud.':'No nikud.'} For each tense use these persons: "I (m)","I (f)","you (m)","you (f)","he","she","we","they". Reply JSON {"is_verb":true,"infinitive_he":"","infinitive_en":"","present":[{"who_en":"","he":"","translit":""}],"past":[{"who_en":"","he":"","translit":""}],"future":[{"who_en":"","he":"","translit":""}]}. If it is NOT a verb, reply {"is_verb":false}.`,`Word: "${word}"`,0);
   if(!d){area.innerHTML='<p class="muted" style="text-align:center">Could not load right now.</p>';return}
   if(!d.is_verb){area.innerHTML='<p class="muted" style="text-align:center;margin-top:12px">That word isn\'t a verb 🙂</p>';return}
   verbCache[word]=d;saveVerbs();renderVerb(d);
 }
 function renderVerb(d){
   const area=document.getElementById('verbArea');
-  let rows=(d.forms||[]).map(f=>`<tr><td>${esc(f.who_en)}</td><td class="he">${esc(f.he)}</td><td><div>${esc(f.translit)}</div></td></tr>`).join('');
-  area.innerHTML=`<div style="text-align:center;margin-top:14px;font-weight:700">${esc(d.infinitive_he||'')} <span class="muted" style="font-weight:400">— ${esc(d.infinitive_en||'to '+ (currentWord&&currentWord.en||''))}</span></div><table class="vtable"><tbody>${rows}</tbody></table><p class="muted" style="margin-top:8px">Present tense. Tap a row's word to hear it.</p>`;
-  area.querySelectorAll('td.he').forEach(td=>td.onclick=()=>speak(td.textContent));
+  area.innerHTML=`<div style="text-align:center;margin-top:14px;font-weight:700">${esc(d.infinitive_he||'')} <span class="muted" style="font-weight:400">— ${esc(d.infinitive_en||'to '+(currentWord&&currentWord.en||''))}</span></div>`;
+  const forms=d.forms?{present:d.forms}:d; // back-compat
+  [['present','⏱️ Present (now)'],['past','⏪ Past (did)'],['future','⏩ Future (will)']].forEach(([k,label])=>{
+    const list=forms[k];if(!Array.isArray(list)||!list.length)return;
+    const h=document.createElement('div');h.className='section-h';h.textContent=label;area.appendChild(h);
+    const t=document.createElement('table');t.className='vtable';
+    t.innerHTML='<tbody>'+list.map(f=>`<tr><td>${esc(f.who_en)}</td><td class="he">${esc(f.he)}</td><td><div>${esc(f.translit)}</div></td></tr>`).join('')+'</tbody>';
+    t.querySelectorAll('td.he').forEach(td=>td.onclick=()=>speak(td.textContent));
+    area.appendChild(t);
+  });
+  const note=document.createElement('p');note.className='muted';note.style.marginTop='8px';note.textContent='Tap any Hebrew form to hear it.';area.appendChild(note);
 }
 
 /* ================= help me answer ================= */
@@ -952,7 +1087,7 @@ function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
 function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
 function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
 let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
-function resetAll(){if(!confirm('Reset everything — words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
+function resetAll(){if(!confirm('Reset everything — words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
 
 /* ================= boot ================= */
 function bootMain(){
