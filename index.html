@@ -414,10 +414,18 @@ let verbCache=LS.get('yalla_verbs',{});
 function saveSettings(){LS.set('yalla_settings',settings)}
 function saveWords(){LS.set('yalla_words',words);rebuildKnown();refreshCounters()}
 /* known-word detection (client-side, so difficulty doesn't depend on the AI) */
-let knownSet=new Set();
+let knownSet=new Set(),masteredSet=new Set();
 function normHe(w){return String(w).replace(/[֑-ׇ]/g,'').replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'').trim()}
-function rebuildKnown(){knownSet=new Set();words.forEach(w=>{const f=normHe(w.he);if(f)knownSet.add(f);String(w.he).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)knownSet.add(n)})})}
-function isKnownWord(w){const n=normHe(w);if(!n||n.length<2)return true;if(knownSet.has(n))return true;const pre='והבלכמש';if(n.length>2&&pre.indexOf(n[0])>=0&&knownSet.has(n.slice(1)))return true;return false}
+function rebuildKnown(){
+  knownSet=new Set();masteredSet=new Set();
+  words.forEach(w=>{
+    const toks=[normHe(w.he)].concat(String(w.he).split(/\s+/).map(normHe)).filter(x=>x);
+    toks.forEach(t=>{knownSet.add(t);if(w.box>=2)masteredSet.add(t)});
+  });
+}
+function inSet(set,w){const n=normHe(w);if(!n||n.length<2)return true;if(set.has(n))return true;const pre='והבלכמש';if(n.length>2&&pre.indexOf(n[0])>=0&&set.has(n.slice(1)))return true;return false}
+function isKnownWord(w){return inSet(knownSet,w)}
+function isMastered(w){return inSet(masteredSet,w)}
 function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&!isKnownWord(p))c++});return c}
 function saveDict(){LS.set('yalla_dict',dict)}
 function saveHistory(){LS.set('yalla_history',history.slice(-40))}
@@ -792,7 +800,7 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');const span=document.createElement('span');span.className='w'+(clean&&!isKnownWord(p)?' neww':'');span.textContent=p;if(clean)span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=p.replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'');const span=document.createElement('span');span.className='w'+(clean&&!isMastered(p)?' neww':'');span.textContent=p;if(clean)span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
   const b=document.createElement('div');b.className='bubble ai';
@@ -807,7 +815,7 @@ function addAI(d,replay){
   if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
-  if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: tap any Hebrew word to hear it and see what it means.';chatScroll().appendChild(h)}
+  if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: blue words are ones you are still learning — tap any Hebrew word to hear it and see its meaning.';chatScroll().appendChild(h)}
   if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one — you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null}
   scrollDown();
 }
