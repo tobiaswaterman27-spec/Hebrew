@@ -337,9 +337,8 @@
         <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small sec" onclick="saveKey()">Save key</button><button class="btn small sec" onclick="toggleKeyView()">👁 Show</button></div>
         <p class="muted" style="margin-top:8px">Stored only on this device. If a key ever leaks, roll it at platform.openai.com and paste the new one here.</p></div>
       <div class="setrow"><label>Voice</label>
-        <div class="toggle" id="setVoice"><button data-vo="auto" onclick="setVoiceMode('auto')">Auto</button><button data-vo="ai" onclick="setVoiceMode('ai')">AI voice 🔊</button><button data-vo="device" onclick="setVoiceMode('device')">Phone (free)</button></div>
-        <button class="btn small sec" style="margin-top:10px" onclick="testVoice()">🔊 Test voice</button>
-        <p class="muted" style="margin-top:8px"><b>Can't hear anything? Pick "AI voice".</b> It works on any phone — OpenAI makes the sound (using your key), so it doesn't need a Hebrew voice installed. Costs a tiny amount per phrase, and repeats are free.<br><br><b>Auto</b> = use your phone's Hebrew voice if it has one, otherwise the AI voice. <b>Phone (free)</b> = your device's Hebrew voice only (no cost, but needs a Hebrew voice installed).</p></div>
+        <button class="btn small sec" onclick="testVoice()">🔊 Test voice</button>
+        <p class="muted" style="margin-top:8px">The tutor's voice is made by OpenAI using your key, so it works on any phone. Costs a tiny amount per phrase, and repeats are free.</p></div>
       <div class="setrow"><button class="btn ghost" onclick="resetAll()">Reset everything</button></div>
     </div>
   </main>
@@ -530,21 +529,8 @@ async function speakAI(text){
   }catch(e){deviceSpeak(text)}
 }
 function playUrl(url){try{if(aiAudioEl){aiAudioEl.pause()}aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
-function speak(text){
-  if(!text)return;
-  const mode=settings.voice||'auto';
-  if(mode==='ai'){speakAI(text);return}
-  if(mode==='device'){deviceSpeak(text);return}
-  if(!heVoice)loadVoices();
-  if(heVoice)deviceSpeak(text);else if(getKey())speakAI(text);else deviceSpeak(text);
-}
-function testVoice(){
-  const mode=settings.voice||'auto';loadVoices();
-  if(mode==='ai'||((mode==='auto')&&!heVoice&&getKey())){toast('Testing AI voice…');speakAI('שלום, מה שלומך');return}
-  if(!('speechSynthesis'in window)){toast('This browser has no speech support');return}
-  deviceSpeak('שלום, מה שלומך');
-  setTimeout(()=>{loadVoices();if(!heVoice)toast(getKey()?'No phone voice found — switch Voice to "AI voice" above':'No Hebrew voice on this device — add one, or add your key and use AI voice');},400);
-}
+function speak(text){if(!text)return;speakAI(text)}
+function testVoice(){if(!getKey()){toast('Add your OpenAI key in Settings first');return}toast('Testing voice…');speakAI('שלום, מה שלומך')}
 
 /* ================= words / SRS ================= */
 const INTERVALS=[0,1,2,4,8,16,32];
@@ -788,13 +774,11 @@ function toggleKb(){document.getElementById('hebKb').classList.toggle('show')}
 function fillSettings(){
   document.querySelectorAll('#setVowel button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='on')===settings.nikud));
   document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
-  document.querySelectorAll('#setVoice button').forEach(b=>b.classList.toggle('on',b.dataset.vo===(settings.voice||'auto')));
   document.getElementById('setLevel').value=settings.level;updateLvlLabel();
   document.getElementById('setName').value=settings.name||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
 }
 function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
-function setVoiceMode(m){settings.voice=m;saveSettings();fillSettings();toast(m==='ai'?'AI voice on — try 🔊 Test':m==='device'?'Phone voice on':'Auto voice on')}
 function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
 function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
 function saveProfile(){settings.name=document.getElementById('setName').value;settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
