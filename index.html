@@ -429,24 +429,24 @@ const MODEL='gpt-4o-mini';
 
 /* ================= word packs ================= */
 const PACKS=[
- {id:'greet',emo:'👋',title:'Greetings',words:[
+ {id:'greet',emo:'👋',title:'First words',words:[
    {he:'שלום',translit:'shalom',en:'hello / peace'},
-   {he:'תודה',translit:'toda',en:'thank you'},
    {he:'כן',translit:'ken',en:'yes'},
    {he:'לא',translit:'lo',en:'no'},
-   {he:'בבקשה',translit:'bevakasha',en:"please / you're welcome"},
-   {he:'סליחה',translit:'slicha',en:'sorry / excuse me'},
-   {he:'להתראות',translit:'lehitraot',en:'goodbye'},
-   {he:'בוקר טוב',translit:'boker tov',en:'good morning'}]},
- {id:'people',emo:'🧍',title:'People',words:[
-   {he:'אני',translit:'ani',en:'I'},
-   {he:'אתה',translit:'ata',en:'you (to a boy)'},
-   {he:'את',translit:'at',en:'you (to a girl)'},
+   {he:'תודה',translit:'toda',en:'thank you'},
+   {he:'אני',translit:'ani',en:"I  (Hebrew has no 'am')"},
+   {he:'אתה',translit:'ata',en:"you  (to a boy)"},
+   {he:'את',translit:'at',en:"you  (to a girl)"},
+   {he:'בבקשה',translit:'bevakasha',en:"please / you're welcome"}]},
+ {id:'people',emo:'🧍',title:'More people',words:[
    {he:'הוא',translit:'hu',en:'he'},
    {he:'היא',translit:'hi',en:'she'},
    {he:'אנחנו',translit:'anachnu',en:'we'},
    {he:'שם',translit:'shem',en:'name'},
-   {he:'חבר',translit:'chaver',en:'friend'}]},
+   {he:'חבר',translit:'chaver',en:'friend'},
+   {he:'סליחה',translit:'slicha',en:'sorry / excuse me'},
+   {he:'להתראות',translit:'lehitraot',en:'goodbye'},
+   {he:'בוקר טוב',translit:'boker tov',en:'good morning'}]},
  {id:'phrases',emo:'💬',title:'Handy phrases',words:[
    {he:'מה שלומך',translit:'ma shlomcha / shlomech',en:'how are you?'},
    {he:'אני בסדר',translit:'ani beseder',en:"I'm fine / okay"},
@@ -798,6 +798,7 @@ function addAI(d,replay){
   hp.onclick=()=>help.classList.toggle('show');row.appendChild(sp);row.appendChild(hp);b.appendChild(row);b.appendChild(help);
   if(d.correction&&d.correction.had_mistake&&d.correction.corrected_he){const c=document.createElement('div');c.className='correction';c.innerHTML=`✏️ Better: <span class="fix">${esc(d.correction.corrected_he)}</span>`+(d.correction.note_en?`<div class="muted" style="margin-top:3px">${esc(d.correction.note_en)}</div>`:'');b.appendChild(c)}
   if(d.grammar_tip&&d.grammar_tip.show&&d.grammar_tip.point_en){const g=document.createElement('div');g.className='grammar';g.innerHTML=`<b>🔤 Tip:</b> ${esc(d.grammar_tip.point_en)}`+(d.grammar_tip.example_he?`<div class="ex">${esc(d.grammar_tip.example_he)}</div>`:'')+(d.grammar_tip.example_en?`<div class="muted">${esc(d.grammar_tip.example_en)}</div>`:'');b.appendChild(g);if(!replay&&!grammar.some(x=>x.point_en===d.grammar_tip.point_en)){grammar.push({point_en:d.grammar_tip.point_en,example_he:d.grammar_tip.example_he||'',example_en:d.grammar_tip.example_en||''});saveGrammar()}}
+  if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
   if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: tap any Hebrew word to hear it and see what it means.';chatScroll().appendChild(h)}
@@ -864,7 +865,8 @@ async function helpAnswer(){
   if(!getKey()){showNoKey();return}
   renderSuggests([],true);
   const ctx=history.filter(h=>!h.hidden).slice(-6).map(h=>(h.role==='assistant'?'Tutor: ':'Me: ')+h.content).join('\n');
-  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using simple words. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.5);
+  const kn=knownList();
+  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet — keep suggestions to 1–2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
   renderSuggests(d&&d.suggestions?d.suggestions:[]);if(!d)toast('Could not get suggestions');
 }
 function renderSuggests(list,loading){const box=document.getElementById('suggests');box.innerHTML='';if(loading){box.innerHTML='<div class="chip">💡 thinking…</div>';return}(list||[]).forEach(s=>{const c=document.createElement('button');c.className='chip';c.innerHTML=`<span class="he">${esc(s.he)}</span><span class="tl">${esc(s.en||'')}</span>`;c.onclick=()=>{document.getElementById('msgInput').value=s.he;box.innerHTML='';document.getElementById('msgInput').focus()};box.appendChild(c)})}
@@ -878,10 +880,21 @@ function toggleKb(){const k=document.getElementById('hebKb');const show=!k.class
 function toggleBuild(){const t=document.getElementById('buildTray');const show=!t.classList.contains('show');t.classList.toggle('show',show);if(show){document.getElementById('hebKb').classList.remove('show');renderBuildTiles()}}
 function renderBuildTiles(){
   const t=document.getElementById('buildTray');t.innerHTML='';
-  const recent=[...words].sort((a,b)=>b.added-a.added).slice(0,40);
-  if(!recent.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first — then tap them here to build sentences without typing.</div>';return}
-  recent.forEach(w=>{const c=document.createElement('button');c.className='tile';c.textContent=w.he;c.onclick=()=>{const i=document.getElementById('msgInput');i.value+=(i.value&&!i.value.endsWith(' ')?' ':'')+w.he;i.focus()};t.appendChild(c)});
-  const bs=document.createElement('button');bs.className='tile';bs.style.borderColor='#d9a';bs.textContent='⌫';bs.onclick=()=>{const i=document.getElementById('msgInput');i.value=i.value.replace(/\s*\S+\s*$/,'')};t.appendChild(bs);
+  if(!words.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first — then tap them here to build sentences without typing.</div>';return}
+  const search=document.createElement('input');search.id='buildSearch';search.placeholder='Search your words — English, Hebrew or sound…';search.autocomplete='off';search.spellcheck=false;search.style.cssText='flex:1 0 100%;margin-bottom:6px;padding:9px 11px';search.oninput=()=>fillBuildTiles(search.value);
+  t.appendChild(search);
+  const wrap=document.createElement('div');wrap.id='buildTiles';wrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;width:100%';
+  t.appendChild(wrap);
+  fillBuildTiles('');
+}
+function fillBuildTiles(q){
+  const wrap=document.getElementById('buildTiles');if(!wrap)return;wrap.innerHTML='';
+  q=(q||'').trim().toLowerCase();
+  let list=[...words].sort((a,b)=>b.added-a.added);
+  if(q)list=list.filter(w=>(w.he||'').toLowerCase().includes(q)||(w.translit||'').toLowerCase().includes(q)||(w.en||'').toLowerCase().includes(q));
+  if(!list.length){wrap.innerHTML='<div class="muted" style="padding:6px">No match — try another spelling.</div>';return}
+  list.slice(0,120).forEach(w=>{const c=document.createElement('button');c.className='tile';c.innerHTML=`<span class="he">${esc(w.he)}</span>`;c.title=w.en||'';c.onclick=()=>{const i=document.getElementById('msgInput');i.value+=(i.value&&!i.value.endsWith(' ')?' ':'')+w.he;i.focus()};wrap.appendChild(c)});
+  const bs=document.createElement('button');bs.className='tile';bs.style.borderColor='#d9a';bs.textContent='⌫';bs.onclick=()=>{const i=document.getElementById('msgInput');i.value=i.value.replace(/\s*\S+\s*$/,'')};wrap.appendChild(bs);
 }
 
 /* ================= settings ================= */
