@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-title" content="Yalla">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>Yalla — Learn Hebrew by Chatting</title>
+<title>Yalla - Learn Hebrew by Chatting</title>
 
 <style>
   :root{
@@ -200,7 +200,7 @@
       </div>
 
       <div class="ob-step active" data-step="0">
-        <p class="muted">Learn everyday Modern Hebrew the natural way — by <b>chatting</b> with a friendly AI tutor that only uses words you know, one new word at a time.</p>
+        <p class="muted">Learn everyday Modern Hebrew the natural way - by <b>chatting</b> with a friendly AI tutor that only uses words you know, one new word at a time.</p>
         <button class="btn" onclick="obNext()">Yalla, let's go →</button>
       </div>
 
@@ -229,14 +229,14 @@
         <div class="h1">A little about you</div>
         <p class="muted">So your tutor can chat about things <i>you</i> like. Both optional.</p>
         <div><label>What should we call you?</label><input id="obName" placeholder="Your name" autocomplete="off"></div>
-        <div><label>Your name in Hebrew <span class="muted" style="font-weight:400">(optional — so it's spelled right)</span></label><input id="obHeName" class="he" placeholder="שם" autocomplete="off" spellcheck="false" style="direction:rtl;text-align:right"></div>
+        <div><label>Your name in Hebrew <span class="muted" style="font-weight:400">(optional - so it's spelled right)</span></label><input id="obHeName" class="he" placeholder="שם" autocomplete="off" spellcheck="false" style="direction:rtl;text-align:right"></div>
         <div><label>Things you're into</label><input id="obHobbies" placeholder="e.g. football, music, cooking" autocomplete="off"></div>
         <button class="btn" onclick="obNext()">Continue →</button>
       </div>
 
       <div class="ob-step" data-step="4">
         <div class="h1">Connect your AI 🔌</div>
-        <p class="muted">Yalla uses OpenAI to power the tutor. Paste an OpenAI key <b>once</b> — it's saved only on this device and never shared.</p>
+        <p class="muted">Yalla uses OpenAI to power the tutor. Paste an OpenAI key <b>once</b> - it's saved only on this device and never shared.</p>
         <div><label>OpenAI API key</label><input id="obKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false"></div>
         <div class="keyhelp">🔑 <b>Where's this from?</b> platform.openai.com → API keys → "Create new secret key". It stays on your phone only.<br><br>💡 You can skip and add it later in Settings, but the tutor won't reply until it's in.</div>
         <button class="btn" onclick="finishOnboard()">Start learning →</button>
@@ -278,7 +278,7 @@
     <!-- LEARN (packs) -->
     <div id="learnPage" class="page">
       <div class="h1">Learn 📖</div>
-      <div class="sub">Finish a pack to unlock the next. Read little stories too — it all feeds your chat.</div>
+      <div class="sub">Finish a pack to unlock the next. Read little stories too - it all feeds your chat.</div>
       <button class="btn" onclick="go('stories')" style="margin-bottom:18px">📚 Read a story</button>
       <div id="packList"></div>
     </div>
@@ -286,7 +286,7 @@
     <!-- STORIES -->
     <div id="storiesPage" class="page">
       <div class="h1">Reading 📚</div>
-      <div class="sub">Short stories using words you know. Tap any word — blue ones are new.</div>
+      <div class="sub">Short stories using words you know. Tap any word - blue ones are new.</div>
       <div id="storyArea"><div class="empty"><div class="big">📖</div><b>Ready to read?</b><p class="muted">Tap below for a little story at your level.</p></div></div>
       <button class="btn" id="storyBtn" onclick="newStory()">✨ New story</button>
       <button class="btn ghost small" style="width:auto;margin-top:10px" onclick="go('learn')">Back</button>
@@ -297,7 +297,7 @@
       <div class="card" id="studyCard">
         <div class="sub" id="studyTitle">Pack</div>
         <div class="progbar"><div id="studyProg"></div></div>
-        <div class="big hetext" id="studyHe">—</div>
+        <div class="big hetext" id="studyHe">-</div>
         <button class="icon-btn" onclick="speak(currentPack&&currentPack.words[packIdx].he)">🔊 Hear it</button>
         <div class="tl" id="studyTl" style="margin-top:14px"></div>
         <div class="en" id="studyEn"></div>
@@ -317,7 +317,7 @@
       <div class="card">
         <div class="sub" id="prTitle">Practice</div>
         <div class="progbar"><div id="prProg"></div></div>
-        <div class="pr-prompt" id="prPrompt">—</div>
+        <div class="pr-prompt" id="prPrompt">-</div>
         <div id="prListen" style="text-align:center;margin-bottom:10px"></div>
         <div id="prOpts"></div>
         <div class="pr-fb" id="prFb"></div>
@@ -351,7 +351,7 @@
     <div id="reviewPage" class="page">
       <div class="card" id="reviewCard">
         <div class="sub" id="reviewProg">Review</div>
-        <div class="big hetext" id="revWord">—</div>
+        <div class="big hetext" id="revWord">-</div>
         <button class="icon-btn" onclick="speak(reviewQueue[revIdx]&&reviewQueue[revIdx].he)">🔊 Hear it</button>
         <div class="reveal" id="revReveal"><div class="tl" id="revTl"></div><div class="en" id="revEn"></div></div>
         <div style="margin-top:20px">
@@ -370,7 +370,7 @@
       <div class="h1">Settings ⚙️</div>
       <div class="setrow"><label>Vowels (nikud)</label><div class="toggle" id="setVowel"><button data-v="off" onclick="setVowel('off')">Without</button><button data-v="on" onclick="setVowel('on')">With vowels</button></div></div>
       <div class="setrow"><label>I am a…</label><div class="toggle" id="setGender"><button data-g="m" onclick="setGender('m')">Boy 🚹</button><button data-g="f" onclick="setGender('f')">Girl 🚺</button><button data-g="x" onclick="setGender('x')">Rather not</button></div></div>
-      <div class="setrow"><label>Difficulty — <span id="lvlLabel"></span></label><input type="range" id="setLevel" min="1" max="5" step="1" oninput="setLevel(this.value)"><div class="rangelbl"><span>Keep it simple</span><span>Push me</span></div></div>
+      <div class="setrow"><label>Difficulty - <span id="lvlLabel"></span></label><input type="range" id="setLevel" min="1" max="5" step="1" oninput="setLevel(this.value)"><div class="rangelbl"><span>Keep it simple</span><span>Push me</span></div></div>
       <div class="setrow"><label>Your name</label><input id="setName" oninput="saveProfile()" placeholder="Your name"></div>
       <div class="setrow"><label>Your name in Hebrew</label><input id="setHeName" class="he" oninput="saveProfile()" placeholder="שם" spellcheck="false" style="direction:rtl;text-align:right"><p class="muted" style="margin-top:6px">The tutor will spell your name exactly like this.</p></div>
       <div class="setrow"><label>Your interests</label><input id="setHobbies" oninput="saveProfile()" placeholder="football, music…"></div>
@@ -396,7 +396,7 @@
 <div id="modal" onclick="if(event.target.id==='modal')closeModal()">
   <div class="sheet">
     <div style="text-align:center;font-weight:700;color:var(--blue);font-size:12px">WORD</div>
-    <div class="big hetext" id="mHe">—</div>
+    <div class="big hetext" id="mHe">-</div>
     <div class="tl" id="mTl"></div>
     <div class="en" id="mEn"></div>
     <div class="row"><button class="btn ghost" onclick="speak(document.getElementById('mHe').textContent)">🔊 Hear</button><button class="btn" id="mSaveBtn" onclick="saveCurrentWord()">＋ Save word</button></div>
@@ -502,7 +502,7 @@ const PACKS=[
    {he:'פרי',translit:'pri',en:'fruit'},
    {he:'ארוחה',translit:'arucha',en:'meal'},
    {he:'טעים',translit:'taim',en:'tasty'}]},
- {id:'numbers',emo:'🔢',title:'Numbers 1–10',words:[
+ {id:'numbers',emo:'🔢',title:'Numbers 1-10',words:[
    {he:'אחת',translit:'achat',en:'one'},
    {he:'שתיים',translit:'shtayim',en:'two'},
    {he:'שלוש',translit:'shalosh',en:'three'},
@@ -640,7 +640,7 @@ let reviewQueue=[],revIdx=0;
 function startReview(){
   reviewQueue=words.filter(w=>w.next<=Date.now());
   if(!reviewQueue.length)reviewQueue=[...words].sort((a,b)=>a.next-b.next).slice(0,10);
-  if(!reviewQueue.length){toast('No words to review yet — do a pack first');return}
+  if(!reviewQueue.length){toast('No words to review yet - do a pack first');return}
   reviewQueue.sort(()=>Math.random()-.5);revIdx=0;
   document.getElementById('reviewDone').classList.add('hidden');document.getElementById('reviewCard').style.display='';
   go('review');showRev();
@@ -663,7 +663,7 @@ function renderLearn(){
       el.innerHTML=`<div class="emo">${p.emo}</div><div class="info"><b>${esc(p.title)}</b><div class="m">${p.words.length} words</div></div><div class="st">${done?'✅':(unlocked?'›':'🔒')}</div>`;
       el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openPack(p)};
     }else{const t=item.t,lv=themeLevelDone(t);
-      el.innerHTML=`<div class="emo">${t.emo}</div><div class="info"><b>${esc(t.title)}</b><div class="m">${lv?('✓ '+lv+' set'+(lv>1?'s':'')+' — tap for more'):'topic words'}</div></div><div class="st">${lv?'＋':(unlocked?'›':'🔒')}</div>`;
+      el.innerHTML=`<div class="emo">${t.emo}</div><div class="info"><b>${esc(t.title)}</b><div class="m">${lv?('✓ '+lv+' set'+(lv>1?'s':'')+' - tap for more'):'topic words'}</div></div><div class="st">${lv?'＋':(unlocked?'›':'🔒')}</div>`;
       el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openThemeLevel(t)};
     }
     box.appendChild(el);
@@ -692,7 +692,7 @@ function finishPack(score,total){
   const idx=PACKS.findIndex(p=>p.id===currentPack.id);
   const nextP=(!isGen&&idx>=0)?PACKS[idx+1]:null;
   const sc=(score!=null)?`You scored ${score}/${total}. `:'';
-  const tail=isGen?('You learned '+currentPack.words.length+' new words! Tap the topic again any time to go deeper.'):(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last starter pack — nice work! Try the topic packs below.'));
+  const tail=isGen?('You learned '+currentPack.words.length+' new words! Tap the topic again any time to go deeper.'):(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last starter pack - nice work! Try the topic packs below.'));
   document.getElementById('packDoneMsg').textContent=sc+tail;
 }
 
@@ -711,7 +711,7 @@ function startPractice(){
 }
 function showPr(){
   const q=prQueue[prIdx];
-  document.getElementById('prTitle').textContent=currentPack.emo+' '+currentPack.title+' — practice';
+  document.getElementById('prTitle').textContent=currentPack.emo+' '+currentPack.title+' - practice';
   document.getElementById('prProg').style.width=Math.round(prIdx/prQueue.length*100)+'%';
   const pr=document.getElementById('prPrompt'),listen=document.getElementById('prListen');listen.innerHTML='';
   if(q.listen){pr.className='pr-prompt';pr.textContent='🔊';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Play again';b.onclick=()=>speak(q.audio);listen.innerHTML='<div class="muted" style="margin-bottom:6px">What did you hear?</div>';listen.appendChild(b);speak(q.audio);}
@@ -791,7 +791,7 @@ async function openThemeLevel(theme){
   document.getElementById('studyTl').textContent='✨ Generating your words…';
   if(!getKey()){document.getElementById('studyTl').textContent='Add your OpenAI key in Settings to generate topic packs.';return}
   let ws=genpacks[genId]||await generatePack(theme,level);
-  if(!ws||!ws.length){document.getElementById('studyTl').textContent='Could not generate right now — go back and try again.';return}
+  if(!ws||!ws.length){document.getElementById('studyTl').textContent='Could not generate right now - go back and try again.';return}
   currentPack={id:genId,emo:theme.emo,title:theme.title+' '+level,words:ws};packIdx=0;
   document.getElementById('studyNext').style.display='';
   showPackCard();
@@ -805,7 +805,7 @@ async function newStory(){
   area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
   const btn=document.getElementById('storyBtn');btn.disabled=true;
   const known=knownList();
-  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few — keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":""}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
+  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few - keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
   currentStory=d;renderStory(d);
@@ -823,7 +823,7 @@ function renderStory(d){
     const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
     const row=document.createElement('div');row.className='brow';
     const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊 slow';sp.onclick=()=>speak(s.he,true);
-    const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.textContent=s.en||'';
+    const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.innerHTML=esc(s.en||'')+(s.literal?`<div style="margin-top:3px">📝 Literal: ${esc(s.literal)}</div>`:'');
     const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
     row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
   });
@@ -860,8 +860,8 @@ function startScenario(s){scenario=s;history=[];saveHistory();document.getElemen
 function endScenario(){scenario=null;document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';history=[];saveHistory();document.getElementById('chatScroll').innerHTML='';greet()}
 
 /* ================= system prompt ================= */
-function levelText(l){return['','Use only very short, very simple Hebrew (2–4 words per sentence). Go slowly.','Use simple everyday Hebrew, short sentences.','Use normal everyday Hebrew at a comfortable pace.','Use natural Hebrew with longer sentences and less help.','Speak as you would to a native speaker. Challenge them.'][l]}
-function genderText(){return{m:'The learner is a boy (male). Address them with אתה (ata) and use masculine verb forms when talking to/about them.',f:'The learner is a girl (female). Address them with את (at) and use feminine verb forms when talking to/about them.',x:'The learner prefers not to say their gender — keep it simple and default to masculine forms without making a point of it.'}[settings.gender]||''}
+function levelText(l){return['','Use only very short, very simple Hebrew (2-4 words per sentence). Go slowly.','Use simple everyday Hebrew, short sentences.','Use normal everyday Hebrew at a comfortable pace.','Use natural Hebrew with longer sentences and less help.','Speak as you would to a native speaker. Challenge them.'][l]}
+function genderText(){return{m:'The learner is a boy (male). Address them with אתה (ata) and use masculine verb forms when talking to/about them.',f:'The learner is a girl (female). Address them with את (at) and use feminine verb forms when talking to/about them.',x:'The learner prefers not to say their gender - keep it simple and default to masculine forms without making a point of it.'}[settings.gender]||''}
 function weakWords(){return words.filter(w=>w.box<2).slice(-8).map(w=>w.he).join(', ')}
 function systemPrompt(){
   const nk=settings.nikud?'Write all Hebrew WITH nikud (vowel points).':'Write all Hebrew WITHOUT nikud (no vowel points).';
@@ -876,37 +876,41 @@ ${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural
 Difficulty ${settings.level}/5: ${levelText(settings.level)}
 ${nk}
 
-SCRIPT — very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet — no Arabic letters at all.
+SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet - no Arabic letters at all.
 
-MOST IMPORTANT RULE — keep it understandable:
+MOST IMPORTANT RULE - keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
-- Reuse the words they ALREADY know as much as possible. New words should be RARE — only about one every 5 to 10 messages, NOT every message.
-- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps — if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, do NOT introduce any new words. Use ONLY words the learner already knows. "new_words" must be empty ([]).'}
+- Reuse the words they ALREADY know as much as possible. New words should be RARE - only about one every 5 to 10 messages, NOT every message.
+- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps - if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, do NOT introduce any new words. Use ONLY words the learner already knows. "new_words" must be empty ([]).'}
 - If they know few/no words, speak mostly in English and lean on their learned words.
 - Keep every message very short (usually one short sentence).
 ${weak?'- Gently reuse these words they are still practising: '+weak+'.':''}
 
-CONVERSATION STYLE — you are a warm human chat partner, NOT a quiz bot. This is the most important part of your job:
+CONVERSATION STYLE - you are a warm human chat partner, NOT a quiz bot. This is the most important part of your job:
 - Every single reply MUST do TWO things in order: (1) REACT to what they just said, then (2) move the chat forward with something NEW.
-- (1) REACT — never ignore their message. Be happy for good news ("יופי!" = great, "אחלה" = awesome), curious about what they share ("אה, נחמד!" = oh, nice!), sympathetic if needed. Answer any question they asked you.
-- (2) NEW — then add a comment or ask about a DIFFERENT topic than last time.
-- English is your friend: freely use English for the warm/reacting parts and to explain, especially early on. Keep the HEBREW to words they know (that is what the vocab rules above are about) — English does not count as "new words".
+- (1) REACT - never ignore their message. Be happy for good news ("יופי!" = great, "אחלה" = awesome), curious about what they share ("אה, נחמד!" = oh, nice!), sympathetic if needed. Answer any question they asked you.
+- (2) NEW - then add a comment or ask about a DIFFERENT topic than last time.
+- English is your friend: freely use English for the warm/reacting parts and to explain, especially early on. Keep the HEBREW to words they know (that is what the vocab rules above are about) - English does not count as "new words".
 - HARD RULES: Never send a reply that is only a greeting or only "מה שלומך". Ask "how are you" AT MOST ONCE, ever. Never repeat a question or sentence you already used.
 - Progress through topics one at a time, coming back to their interests (${settings.hobbies||'their hobbies'}): their name → where they live → family → a food they like → a hobby → their day → simple plans → feelings.
 - Also share tiny things about "yourself" so it feels mutual, not an interrogation.
-${recentSaid.length?'- You ALREADY said these recently — do NOT repeat them, clearly say something different:\n'+recentSaid.map(r=>'   · "'+r+'"').join('\n'):''}
+${recentSaid.length?'- You ALREADY said these recently - do NOT repeat them, clearly say something different:\n'+recentSaid.map(r=>'   · "'+r+'"').join('\n'):''}
 
 GOOD example (do this): learner says "אני טוב" → you reply: "יופי! Glad to hear it 😊 What's your name? (איך קוראים לך?)". Next turn you react to their name, then ask something else.
 BAD example (never do this): "שלום! מה שלומך?" and then later again "מה שלומך?".
 
 Also:
 - If the learner makes a mistake, gently model the correct version in "correction" (never scold).
-- You (the tutor) have NO fixed gender. The learner may address or refer to you as either male (אתה / הוא) or female (את / היא) — BOTH are correct. Never correct them on which gender they use for you, and don't count it as a mistake.
+- You (the tutor) have NO fixed gender. The learner may address or refer to you as either male (אתה / הוא) or female (את / היא) - BOTH are correct. Never correct them on which gender they use for you, and don't count it as a mistake.
 - When it genuinely helps, give ONE tiny grammar tip in "grammar_tip" (e.g. a verb ending or gender), with a simple English explanation and a short example. Otherwise set show:false.
 - If in a scenario and the mission is done, set scenario_complete true and celebrate briefly in reply_he.
 
+PUNCTUATION: Never use em dashes or en dashes ("-" or "-") anywhere. Use commas, full stops, or a simple hyphen "-" instead.
+
+"reply_literal" = a word-for-word LITERAL English translation of your Hebrew (it may sound clunky in English - that is the point, it shows how the Hebrew is built).
+
 Reply with ONE JSON object only (no markdown) with EXACTLY these keys:
-{"reply_he":"","reply_translit":"","reply_en":"","new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
+{"reply_he":"","reply_translit":"","reply_en":"","reply_literal":"","new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
 }
 
 /* ================= OpenAI ================= */
@@ -941,15 +945,15 @@ function addAI(d,replay){
   const row=document.createElement('div');row.className='brow';
   const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(d.reply_he);
   const hp=document.createElement('button');hp.className='icon-btn';hp.textContent='🇬🇧 translation';
-  const help=document.createElement('div');help.className='help-line';help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`;
+  const help=document.createElement('div');help.className='help-line';help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`+(d.reply_literal?`<div style="margin-top:5px">📝 Literal: ${esc(d.reply_literal)}</div>`:'');
   hp.onclick=()=>help.classList.toggle('show');row.appendChild(sp);row.appendChild(hp);b.appendChild(row);b.appendChild(help);
   if(d.correction&&d.correction.had_mistake&&d.correction.corrected_he){const c=document.createElement('div');c.className='correction';c.innerHTML=`✏️ Better: <span class="fix">${esc(d.correction.corrected_he)}</span>`+(d.correction.note_en?`<div class="muted" style="margin-top:3px">${esc(d.correction.note_en)}</div>`:'');b.appendChild(c)}
   if(d.grammar_tip&&d.grammar_tip.show&&d.grammar_tip.point_en){const g=document.createElement('div');g.className='grammar';g.innerHTML=`<b>🔤 Tip:</b> ${esc(d.grammar_tip.point_en)}`+(d.grammar_tip.example_he?`<div class="ex">${esc(d.grammar_tip.example_he)}</div>`:'')+(d.grammar_tip.example_en?`<div class="muted">${esc(d.grammar_tip.example_en)}</div>`:'');b.appendChild(g);if(!replay&&!grammar.some(x=>x.point_en===d.grammar_tip.point_en)){grammar.push({point_en:d.grammar_tip.point_en,example_he:d.grammar_tip.example_he||'',example_en:d.grammar_tip.example_en||''});saveGrammar()}}
   if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
-  if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: blue words are ones you are still learning — tap any Hebrew word to hear it and see its meaning.';chatScroll().appendChild(h)}
-  if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one — you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null}
+  if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: blue words are ones you are still learning - tap any Hebrew word to hear it and see its meaning.';chatScroll().appendChild(h)}
+  if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null}
   scrollDown();
 }
 function addSpotlight(w){const s=document.createElement('div');s.className='spot';s.innerHTML=`<div class="tag">✨ New word</div><div class="big">${esc(w.he)}</div><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div>`;const row=document.createElement('div');row.className='brow';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Hear it';b.onclick=()=>speak(w.he);row.appendChild(b);s.appendChild(row);chatScroll().appendChild(s)}
@@ -961,7 +965,7 @@ async function getReply(extra){
   if(r.error)return r;
   const thresh=settings.level<=2?1:(settings.level===3?2:99);
   if(countUnknown(r.data.reply_he||'')>thresh){
-    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said — just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Do not turn it into a bare "how are you". Same JSON format.]`);
+    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said - just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Do not turn it into a bare "how are you". Same JSON format.]`);
     if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))return r2;
   }
   return r;
@@ -993,7 +997,7 @@ function addPackNudge(item){
 }
 async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
 async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack()}
-function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem — check your connection and try again.';if(r.error==='http')m='OpenAI error — check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
+function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem - check your connection and try again.';if(r.error==='http')m='OpenAI error - check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
 function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`)}
 
@@ -1021,7 +1025,7 @@ async function showVerbForms(){
 }
 function renderVerb(d){
   const area=document.getElementById('verbArea');
-  area.innerHTML=`<div style="text-align:center;margin-top:14px;font-weight:700">${esc(d.infinitive_he||'')} <span class="muted" style="font-weight:400">— ${esc(d.infinitive_en||'to '+(currentWord&&currentWord.en||''))}</span></div>`;
+  area.innerHTML=`<div style="text-align:center;margin-top:14px;font-weight:700">${esc(d.infinitive_he||'')} <span class="muted" style="font-weight:400">- ${esc(d.infinitive_en||'to '+(currentWord&&currentWord.en||''))}</span></div>`;
   const forms=d.forms?{present:d.forms}:d; // back-compat
   [['present','⏱️ Present (now)'],['past','⏪ Past (did)'],['future','⏩ Future (will)']].forEach(([k,label])=>{
     const list=forms[k];if(!Array.isArray(list)||!list.length)return;
@@ -1040,7 +1044,7 @@ async function helpAnswer(){
   renderSuggests([],true);
   const ctx=history.filter(h=>!h.hidden).slice(-6).map(h=>(h.role==='assistant'?'Tutor: ':'Me: ')+h.content).join('\n');
   const kn=knownList();
-  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet — keep suggestions to 1–2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
+  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet - keep suggestions to 1-2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
   renderSuggests(d&&d.suggestions?d.suggestions:[]);if(!d)toast('Could not get suggestions');
 }
 function renderSuggests(list,loading){const box=document.getElementById('suggests');box.innerHTML='';if(loading){box.innerHTML='<div class="chip">💡 thinking…</div>';return}(list||[]).forEach(s=>{const c=document.createElement('button');c.className='chip';c.innerHTML=`<span class="he">${esc(s.he)}</span><span class="tl">${esc(s.en||'')}</span>`;c.onclick=()=>{document.getElementById('msgInput').value=s.he;box.innerHTML='';document.getElementById('msgInput').focus()};box.appendChild(c)})}
@@ -1054,8 +1058,8 @@ function toggleKb(){const k=document.getElementById('hebKb');const show=!k.class
 function toggleBuild(){const t=document.getElementById('buildTray');const show=!t.classList.contains('show');t.classList.toggle('show',show);if(show){document.getElementById('hebKb').classList.remove('show');renderBuildTiles()}}
 function renderBuildTiles(){
   const t=document.getElementById('buildTray');t.innerHTML='';
-  if(!words.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first — then tap them here to build sentences without typing.</div>';return}
-  const search=document.createElement('input');search.id='buildSearch';search.placeholder='Search your words — English, Hebrew or sound…';search.autocomplete='off';search.spellcheck=false;search.style.cssText='flex:1 0 100%;margin-bottom:6px;padding:9px 11px';search.oninput=()=>fillBuildTiles(search.value);
+  if(!words.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first - then tap them here to build sentences without typing.</div>';return}
+  const search=document.createElement('input');search.id='buildSearch';search.placeholder='Search your words - English, Hebrew or sound…';search.autocomplete='off';search.spellcheck=false;search.style.cssText='flex:1 0 100%;margin-bottom:6px;padding:9px 11px';search.oninput=()=>fillBuildTiles(search.value);
   t.appendChild(search);
   const wrap=document.createElement('div');wrap.id='buildTiles';wrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;width:100%';
   t.appendChild(wrap);
@@ -1066,7 +1070,7 @@ function fillBuildTiles(q){
   q=(q||'').trim().toLowerCase();
   let list=[...words].sort((a,b)=>b.added-a.added);
   if(q)list=list.filter(w=>(w.he||'').toLowerCase().includes(q)||(w.translit||'').toLowerCase().includes(q)||(w.en||'').toLowerCase().includes(q));
-  if(!list.length){wrap.innerHTML='<div class="muted" style="padding:6px">No match — try another spelling.</div>';return}
+  if(!list.length){wrap.innerHTML='<div class="muted" style="padding:6px">No match - try another spelling.</div>';return}
   list.slice(0,120).forEach(w=>{const c=document.createElement('button');c.className='tile';c.innerHTML=`<span class="he">${esc(w.he)}</span>`;c.title=w.en||'';c.onclick=()=>{const i=document.getElementById('msgInput');i.value+=(i.value&&!i.value.endsWith(' ')?' ':'')+w.he;i.focus()};wrap.appendChild(c)});
   const bs=document.createElement('button');bs.className='tile';bs.style.borderColor='#d9a';bs.textContent='⌫';bs.onclick=()=>{const i=document.getElementById('msgInput');i.value=i.value.replace(/\s*\S+\s*$/,'')};wrap.appendChild(bs);
 }
@@ -1085,7 +1089,7 @@ function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
 function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
 function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
 let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
-function resetAll(){if(!confirm('Reset everything — words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
+function resetAll(){if(!confirm('Reset everything - words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
 
 /* ================= boot ================= */
 function bootMain(){
