@@ -437,6 +437,7 @@ function isKnownWord(w){return inSet(knownSet,w)}
 function isMastered(w){return inSet(masteredSet,w)}
 function isHeb(w){return /[֐-׿ﬀ-ﭏ]/.test(w)}
 function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&isHeb(n)&&!isKnownWord(p))c++});return c}
+function countUnmastered(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&isHeb(n)&&!isMastered(p))c++});return c}
 function saveDict(){LS.set('yalla_dict',dict)}
 function saveHistory(){LS.set('yalla_history',history.slice(-40))}
 function saveGrammar(){LS.set('yalla_grammar',grammar)}
@@ -809,13 +810,19 @@ async function openThemeLevel(theme){
 
 /* ===== AI reading stories ===== */
 let currentStory=null;
+async function storyCall(list,stricter){
+  const vocab=list.length?list.join('; '):'(the learner knows very few words yet)';
+  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
+}
 async function newStory(){
   if(!getKey()){toast('Add your OpenAI key in Settings first');return}
   const area=document.getElementById('storyArea');
   area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
   const btn=document.getElementById('storyBtn');btn.disabled=true;
-  const known=knownList();
-  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few - keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Do not use em dashes. Use British English spelling. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
+  const mastered=words.filter(w=>w.box>=2).map(w=>w.he+' ('+w.en+')').slice(-200);
+  if(mastered.length<8){btn.disabled=false;area.innerHTML='<div class="empty"><div class="big">📖</div><b>Learn a few more words first</b><p class="muted">Finish a couple of packs in 📖 Learn, then your stories will use words you know.</p></div>';return}
+  let d=await storyCall(mastered,false),tries=0;
+  while(d&&Array.isArray(d.sentences)&&countUnmastered(d.sentences.map(s=>s.he).join(' '))>3&&tries<2){d=await storyCall(mastered,true);tries++}
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
   currentStory=d;renderStory(d);
