@@ -278,13 +278,9 @@
     <!-- LEARN (packs) -->
     <div id="learnPage" class="page">
       <div class="h1">Learn 📖</div>
-      <div class="sub">Learn words in packs and read little stories — it all feeds your chat.</div>
+      <div class="sub">Finish a pack to unlock the next. Read little stories too — it all feeds your chat.</div>
       <button class="btn" onclick="go('stories')" style="margin-bottom:18px">📚 Read a story</button>
-      <div class="section-h">Starter packs</div>
       <div id="packList"></div>
-      <div class="section-h">More topics 🌍</div>
-      <div class="sub">Hundreds more words. Tap a topic to learn a set — come back to go deeper any time.</div>
-      <div id="themeList"></div>
     </div>
 
     <!-- STORIES -->
@@ -561,7 +557,7 @@ function go(tab){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===(tab==='stories'||tab==='pack'||tab==='practice'?'learn':tab)));
   if(tab==='words')renderWords();
   if(tab==='scn')renderScenarios();
-  if(tab==='learn'){renderLearn();renderThemes()}
+  if(tab==='learn')renderLearn();
   if(tab==='set')fillSettings();
 }
 
@@ -591,17 +587,19 @@ if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loa
 function unlockTTS(){if(ttsUnlocked||!('speechSynthesis'in window))return;ttsUnlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}loadVoices()}
 document.addEventListener('pointerdown',unlockTTS,{once:true});
 function deviceSpeak(text){if(!('speechSynthesis'in window))return false;if(!heVoice)loadVoices();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';u.rate=.85;if(heVoice)u.voice=heVoice;speechSynthesis.speak(u);return true}
-async function speakAI(text){
+async function speakAI(text,slow){
   const key=getKey();if(!key){deviceSpeak(text);return}
-  if(aiAudioCache[text]){playUrl(aiAudioCache[text]);return}
+  const ck=(slow?'s|':'')+text;
+  if(aiAudioCache[ck]){playUrl(aiAudioCache[ck]);return}
+  const instructions=slow?'Read this Modern Hebrew VERY slowly and clearly, with a little pause between each word, like a teacher reading aloud to a young beginner.':'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.';
   try{
-    const res=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'nova',input:text,instructions:'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.'})});
+    const res=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'nova',input:text,instructions})});
     if(!res.ok){deviceSpeak(text);if(res.status===401)toast('AI voice: check your key');return}
-    const url=URL.createObjectURL(await res.blob());aiAudioCache[text]=url;playUrl(url);
+    const url=URL.createObjectURL(await res.blob());aiAudioCache[ck]=url;playUrl(url);
   }catch(e){deviceSpeak(text)}
 }
 function playUrl(url){try{if(aiAudioEl){aiAudioEl.pause()}aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
-function speak(text){if(!text)return;speakAI(text)}
+function speak(text,slow){if(!text)return;speakAI(text,slow)}
 function testVoice(){if(!getKey()){toast('Add your OpenAI key in Settings first');return}toast('Testing voice…');speakAI('שלום, מה שלומך')}
 
 /* ================= words / SRS ================= */
@@ -652,14 +650,22 @@ function revShow(){document.getElementById('revReveal').classList.add('show');do
 function revGrade(ok){const w=words.find(x=>x.he===reviewQueue[revIdx].he);if(w){w.seen++;w.box=ok?Math.min(6,w.box+1):Math.max(0,w.box-1);w.next=Date.now()+INTERVALS[w.box]*86400000;saveWords()}revIdx++;if(revIdx>=reviewQueue.length){document.getElementById('reviewCard').style.display='none';document.getElementById('reviewDone').classList.remove('hidden')}else showRev()}
 
 /* ================= learn / packs ================= */
-function packUnlocked(i){return i===0||settings.packs[PACKS[i-1].id]}
+function allItems(){return PACKS.map(p=>({kind:'pack',p:p})).concat(THEMES.map(t=>({kind:'theme',t:t})))}
+function itemDone(item){return item.kind==='pack'?!!settings.packs[item.p.id]:themeLevelDone(item.t)>0}
+function nextUnfinished(){const items=allItems();for(let i=0;i<items.length;i++){if(!itemDone(items[i]))return items[i]}return null}
 function renderLearn(){
   const box=document.getElementById('packList');box.innerHTML='';
-  PACKS.forEach((p,i)=>{
-    const done=settings.packs[p.id],unlocked=packUnlocked(i);
+  const items=allItems();
+  items.forEach((item,i)=>{
+    const done=itemDone(item),unlocked=(i===0)||itemDone(items[i-1]);
     const el=document.createElement('div');el.className='pack'+(unlocked?'':' locked');
-    el.innerHTML=`<div class="emo">${p.emo}</div><div class="info"><b>${p.title}</b><div class="m">${p.words.length} words</div></div><div class="st">${done?'✅':(unlocked?'›':'🔒')}</div>`;
-    el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openPack(p)};
+    if(item.kind==='pack'){const p=item.p;
+      el.innerHTML=`<div class="emo">${p.emo}</div><div class="info"><b>${esc(p.title)}</b><div class="m">${p.words.length} words</div></div><div class="st">${done?'✅':(unlocked?'›':'🔒')}</div>`;
+      el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openPack(p)};
+    }else{const t=item.t,lv=themeLevelDone(t);
+      el.innerHTML=`<div class="emo">${t.emo}</div><div class="info"><b>${esc(t.title)}</b><div class="m">${lv?('✓ '+lv+' set'+(lv>1?'s':'')+' — tap for more'):'topic words'}</div></div><div class="st">${lv?'＋':(unlocked?'›':'🔒')}</div>`;
+      el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openThemeLevel(t)};
+    }
     box.appendChild(el);
   });
 }
@@ -761,16 +767,6 @@ const THEMES=[
  {id:'town',emo:'🏘️',title:'Places in town'},
 ];
 function themeLevelDone(theme){let n=0;while(settings.packs[theme.id+':'+(n+1)])n++;return n}
-function renderThemes(){
-  const box=document.getElementById('themeList');box.innerHTML='';
-  THEMES.forEach(theme=>{
-    const done=themeLevelDone(theme);
-    const el=document.createElement('div');el.className='pack';
-    el.innerHTML=`<div class="emo">${theme.emo}</div><div class="info"><b>${esc(theme.title)}</b><div class="m">${done?('✓ '+done+' set'+(done>1?'s':'')+' learned — tap for more'):'tap to learn a set'}</div></div><div class="st">${done?'＋':'›'}</div>`;
-    el.onclick=()=>openThemeLevel(theme);
-    box.appendChild(el);
-  });
-}
 async function generatePack(theme,level){
   const genId=theme.id+':'+level;
   if(genpacks[genId])return genpacks[genId];
@@ -821,12 +817,12 @@ function renderStory(d){
   const h=document.createElement('div');h.className='h1 hetext';renderHebrewInto(h,d.title_he||'סיפור');card.appendChild(h);
   if(d.title_en){const s=document.createElement('div');s.className='sub';s.textContent=d.title_en;card.appendChild(s)}
   const full=(d.sentences||[]).map(s=>s.he).join(' ');
-  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Play whole story';playAll.style.marginBottom='6px';playAll.onclick=()=>speak(full);card.appendChild(playAll);
+  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Play whole story (slow)';playAll.style.marginBottom='6px';playAll.onclick=()=>speak(full,true);card.appendChild(playAll);
   (d.sentences||[]).forEach(s=>{
     const p=document.createElement('div');p.style.cssText='margin:12px 0 0;padding-bottom:11px;border-bottom:1px solid var(--line)';
     const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
     const row=document.createElement('div');row.className='brow';
-    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.he);
+    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊 slow';sp.onclick=()=>speak(s.he,true);
     const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.textContent=s.en||'';
     const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
     row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
@@ -979,16 +975,18 @@ function updateNewWordCounter(d){
 let chatTurns=0;
 function maybeNudgePack(){
   if(scenario)return;
-  const next=PACKS.find(p=>!settings.packs[p.id]);
-  if(!next)return;
+  const item=nextUnfinished();
+  if(!item)return;
   chatTurns++;
-  if(chatTurns>=10){chatTurns=0;addPackNudge(next)}
+  if(chatTurns>=10){chatTurns=0;addPackNudge(item)}
 }
-function addPackNudge(pack){
+function addPackNudge(item){
+  const emo=item.kind==='pack'?item.p.emo:item.t.emo;
+  const title=item.kind==='pack'?item.p.title:item.t.title;
   const el=document.createElement('div');el.className='spot';el.style.borderColor='var(--good)';
-  el.innerHTML=`<div class="tag" style="color:var(--good)">📖 Ready for more?</div><div style="font-weight:700;margin:4px 0">Want to learn new words? Next pack: ${pack.emo} ${esc(pack.title)}</div>`;
+  el.innerHTML=`<div class="tag" style="color:var(--good)">📖 Ready for more?</div><div style="font-weight:700;margin:4px 0">Want to learn new words? Next: ${emo} ${esc(title)}</div>`;
   const row=document.createElement('div');row.className='brow';
-  const yes=document.createElement('button');yes.className='icon-btn';yes.style.cssText='background:var(--good);color:#fff';yes.textContent="Yes, let's go →";yes.onclick=()=>{el.remove();openPack(pack)};
+  const yes=document.createElement('button');yes.className='icon-btn';yes.style.cssText='background:var(--good);color:#fff';yes.textContent="Yes, let's go →";yes.onclick=()=>{el.remove();item.kind==='pack'?openPack(item.p):openThemeLevel(item.t)};
   const no=document.createElement('button');no.className='icon-btn';no.textContent='Not now';no.onclick=()=>{el.remove()};
   row.appendChild(yes);row.appendChild(no);el.appendChild(row);
   chatScroll().appendChild(el);scrollDown();
