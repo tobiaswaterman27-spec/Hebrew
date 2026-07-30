@@ -1160,11 +1160,16 @@ function sfxWrong(){sfxSeq([[220,.16],[165,.22]],'sawtooth',.08)}
 function sfxComplete(){sfxSeq([[523,.12],[659,.12],[784,.12],[1047,.3]],'triangle',.13)}
 function sfxTap(){sfxSeq([[880,.05]],'sine',.05)}
 function sfxNudge(){sfxSeq([[587,.1],[784,.15]],'sine',.09)}
-let musicTimer=null,musicStep=0;
-const MUSIC=[[261.63,392.00],[293.66,440.00],[329.63,392.00],[392.00,523.25],[349.23,440.00],[293.66,392.00]];
-function musicNote(freq,vol,dur){const ac=audioCtx();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(ac.destination);const t=ac.currentTime;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.3);g.gain.linearRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.05)}
-function startMusic(){if(musicTimer)return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();musicStep=0;const tick=function(){const ch=MUSIC[musicStep%MUSIC.length];musicNote(ch[0],0.05,1.6);musicNote(ch[1],0.03,1.6);musicStep++};tick();musicTimer=setInterval(tick,1700)}
-function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}}
+let musicTimer=null,musicChord=0,musicNodes=null;
+// A gentle Am - F - C - G progression (pad), with an A-minor-pentatonic melody over it.
+const CHORDS=[[220.00,261.63,329.63],[174.61,220.00,261.63],[261.63,329.63,392.00],[196.00,246.94,293.66]];
+const PENTA=[440.00,523.25,587.33,659.25,783.99,880.00];
+function musicChain(){const ac=audioCtx();if(!musicNodes){const g=ac.createGain();g.gain.value=0.6;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1050;f.Q.value=0.4;g.connect(f);f.connect(ac.destination);musicNodes={gain:g,filter:f}}return musicNodes}
+function padNote(freq,dur){const ac=audioCtx();const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=freq;o.connect(g);g.connect(musicChain().gain);const t=ac.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.06,t+1.0);g.gain.setValueAtTime(0.06,t+dur-1.0);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur+0.1)}
+function melodyNote(freq,at,dur){const ac=audioCtx();const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(musicChain().gain);const t=ac.currentTime+at;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.045,t+0.06);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.05)}
+function musicTick(){const bar=4.2,chord=CHORDS[musicChord%CHORDS.length];chord.forEach(f=>padNote(f,bar));const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++){melodyNote(PENTA[Math.floor(Math.random()*PENTA.length)],0.3+Math.random()*3,1.3)}musicChord++}
+function startMusic(){if(musicTimer)return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();musicChord=0;musicTick();musicTimer=setInterval(musicTick,4200)}
+function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}if(musicNodes){try{musicNodes.gain.gain.linearRampToValueAtTime(0,audioCtx().currentTime+0.3)}catch(e){}setTimeout(function(){if(musicNodes){try{musicNodes.gain.gain.value=0.6}catch(e){}}},400)}}
 function applyMusic(){if(fxOn('music'))startMusic();else stopMusic()}
 function applyAnim(){const a=document.getElementById('app');if(a)a.classList.toggle('noanim',!fxOn('anim'))}
 function confetti(){if(!fxOn('anim'))return;const colors=['#0038b8','#ffffff','#8fb0ff','#ffd54a','#3f6fe0'];for(let i=0;i<44;i++){const d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=colors[i%colors.length];d.style.animation='fall '+(1.4+Math.random()*1.3)+'s linear forwards';document.body.appendChild(d);setTimeout(function(){d.remove()},2900)}}
