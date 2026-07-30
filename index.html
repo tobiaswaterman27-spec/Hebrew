@@ -70,9 +70,8 @@
   .bubble.ai{background:#fff;align-self:flex-start;border-bottom-left-radius:5px}
   .bubble.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
   .bubble.me .hetext{direction:rtl}
-  .w{cursor:pointer;border-radius:4px;padding:0 1px}
-  .bubble.ai .w{border-bottom:1px dotted #9db4ec}
-  .bubble.ai .w:active{background:var(--blue-soft)}
+  .w{cursor:pointer;border-radius:4px;padding:0 1px;border-bottom:1px dotted #9db4ec}
+  .w:active{background:var(--blue-soft)}
   .brow{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
   .icon-btn{background:var(--blue-soft);color:var(--blue);border:none;border-radius:9px;padding:5px 9px;font-size:13px;font-weight:600}
   .bubble.me .icon-btn{background:rgba(255,255,255,.2);color:#fff}
@@ -159,7 +158,7 @@
   .rev-actions{display:flex;gap:10px}
   .progbar{height:7px;background:var(--blue-soft);border-radius:10px;overflow:hidden;margin:4px 0 6px}
   .progbar div{height:100%;background:var(--blue);width:0;transition:width .2s}
-  .bubble.ai .w.neww{color:var(--blue);font-weight:800;border-bottom:2px solid var(--blue)}
+  .w.neww{color:var(--blue);font-weight:800;border-bottom:2px solid var(--blue)}
   .pr-prompt{text-align:center;font-size:36px;font-weight:800;margin:14px 0;direction:rtl}
   .pr-prompt.en{font-size:26px;direction:ltr}
   .pr-opt{display:block;width:100%;text-align:center;background:#fff;border:2px solid var(--line);border-radius:12px;padding:15px;margin-bottom:10px;font-size:18px;color:var(--ink)}
@@ -286,7 +285,7 @@
     <!-- STORIES -->
     <div id="storiesPage" class="page">
       <div class="h1">Reading 📚</div>
-      <div class="sub">Short stories using words you know. Tap any word - blue ones are new.</div>
+      <div class="sub">Short stories at your level.</div>
       <div id="storyArea"><div class="empty"><div class="big">📖</div><b>Ready to read?</b><p class="muted">Tap below for a little story at your level.</p></div></div>
       <button class="btn" id="storyBtn" onclick="newStory()">✨ New story</button>
       <button class="btn ghost small" style="width:auto;margin-top:10px" onclick="go('learn')">Back</button>
@@ -587,19 +586,30 @@ if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loa
 function unlockTTS(){if(ttsUnlocked||!('speechSynthesis'in window))return;ttsUnlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}loadVoices()}
 document.addEventListener('pointerdown',unlockTTS,{once:true});
 function deviceSpeak(text){if(!('speechSynthesis'in window))return false;if(!heVoice)loadVoices();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';u.rate=.85;if(heVoice)u.voice=heVoice;speechSynthesis.speak(u);return true}
-async function speakAI(text,slow){
-  const key=getKey();if(!key){deviceSpeak(text);return}
+async function ttsUrl(text,slow){
+  const key=getKey();if(!key)return null;
   const ck=(slow?'s|':'')+text;
-  if(aiAudioCache[ck]){playUrl(aiAudioCache[ck]);return}
-  const instructions=slow?'Read this Modern Hebrew VERY slowly and clearly, with a little pause between each word, like a teacher reading aloud to a young beginner.':'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.';
+  if(aiAudioCache[ck])return aiAudioCache[ck];
+  const instructions=slow?'Read this Modern Hebrew very slowly and clearly, with a clear pause between each word, like a teacher reading aloud to a young beginner.':'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.';
   try{
     const res=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'nova',input:text,instructions})});
-    if(!res.ok){deviceSpeak(text);if(res.status===401)toast('AI voice: check your key');return}
-    const url=URL.createObjectURL(await res.blob());aiAudioCache[ck]=url;playUrl(url);
-  }catch(e){deviceSpeak(text)}
+    if(!res.ok){if(res.status===401)toast('AI voice: check your key');return null}
+    const url=URL.createObjectURL(await res.blob());aiAudioCache[ck]=url;return url;
+  }catch(e){return null}
 }
+async function speakAI(text,slow){const url=await ttsUrl(text,slow);if(url)playUrl(url);else deviceSpeak(text)}
 function playUrl(url){try{if(aiAudioEl){aiAudioEl.pause()}aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
+function playUrlAwait(url){return new Promise(function(res){try{if(aiAudioEl)aiAudioEl.pause();aiAudioEl=new Audio(url);aiAudioEl.onended=function(){res()};aiAudioEl.onerror=function(){res()};aiAudioEl.play()}catch(e){res()}})}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
 function speak(text,slow){if(!text)return;speakAI(text,slow)}
+async function playStory(){
+  const sents=(currentStory&&currentStory.sentences)||[];
+  for(let i=0;i<sents.length;i++){
+    const url=await ttsUrl(sents[i].he,true);
+    if(url)await playUrlAwait(url);else deviceSpeak(sents[i].he);
+    if(i<sents.length-1)await sleep(700);
+  }
+}
 function testVoice(){if(!getKey()){toast('Add your OpenAI key in Settings first');return}toast('Testing voice…');speakAI('שלום, מה שלומך')}
 
 /* ================= words / SRS ================= */
@@ -771,7 +781,7 @@ async function generatePack(theme,level){
   const genId=theme.id+':'+level;
   if(genpacks[genId])return genpacks[genId];
   const avoid=words.map(w=>w.he).slice(-160).join(', ');
-  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
+  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Use British English spelling for meanings. Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
   if(!d||!Array.isArray(d.words))return null;
   const ws=d.words.filter(w=>w&&w.he&&w.en).slice(0,16);
   if(!ws.length)return null;
@@ -805,7 +815,7 @@ async function newStory(){
   area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
   const btn=document.getElementById('storyBtn');btn.disabled=true;
   const known=knownList();
-  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few - keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
+  const d=await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences with a tiny bit of fun. Use ONLY Hebrew words the learner knows, plus AT MOST 2 new words (list them in new_words with glosses). Known words: ${known.length?known.join('; '):'(they know very few - keep it extremely basic and lean on a handful of essential everyday words, glossing anything new)'}. ${settings.nikud?'With nikud.':'No nikud.'} Do not use em dashes. Use British English spelling. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Make it friendly and easy to read.',0.75);
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
   currentStory=d;renderStory(d);
@@ -816,13 +826,12 @@ function renderStory(d){
   const card=document.createElement('div');card.className='card';
   const h=document.createElement('div');h.className='h1 hetext';renderHebrewInto(h,d.title_he||'סיפור');card.appendChild(h);
   if(d.title_en){const s=document.createElement('div');s.className='sub';s.textContent=d.title_en;card.appendChild(s)}
-  const full=(d.sentences||[]).map(s=>s.he).join(' ');
-  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Play whole story (slow)';playAll.style.marginBottom='6px';playAll.onclick=()=>speak(full,true);card.appendChild(playAll);
+  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Listen';playAll.style.marginBottom='6px';playAll.onclick=()=>playStory();card.appendChild(playAll);
   (d.sentences||[]).forEach(s=>{
     const p=document.createElement('div');p.style.cssText='margin:12px 0 0;padding-bottom:11px;border-bottom:1px solid var(--line)';
     const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
     const row=document.createElement('div');row.className='brow';
-    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊 slow';sp.onclick=()=>speak(s.he,true);
+    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.he,true);
     const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.innerHTML=esc(s.en||'')+(s.literal?`<div style="margin-top:3px">📝 Literal: ${esc(s.literal)}</div>`:'');
     const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
     row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
@@ -876,7 +885,7 @@ ${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural
 Difficulty ${settings.level}/5: ${levelText(settings.level)}
 ${nk}
 
-SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet - no Arabic letters at all.
+SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet - no Arabic letters at all. Use BRITISH English spelling in all English text (e.g. colour, favourite, practise, realise).
 
 MOST IMPORTANT RULE - keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
@@ -952,7 +961,6 @@ function addAI(d,replay){
   if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
-  if(!replay&&!settings.tipShown){settings.tipShown=true;saveSettings();const h=document.createElement('div');h.className='tiphint';h.textContent='👆 Tip: blue words are ones you are still learning - tap any Hebrew word to hear it and see its meaning.';chatScroll().appendChild(h)}
   if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null}
   scrollDown();
 }
@@ -1006,7 +1014,7 @@ async function lookupWord(word,context){
   if(dict[word]){openWord({he:word,translit:dict[word].translit,en:dict[word].en});return}
   openWord({he:word,translit:'…',en:'looking up…'});
   if(!getKey()){document.getElementById('mEn').textContent='Add your key in Settings to look up words.';return}
-  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Reply JSON {"translit":"easy english letters","en":"short english meaning"}.',`Word: "${word}"  (from: "${context}")`,0);
+  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. Reply JSON {"translit":"easy english letters","en":"short english meaning"}.',`Word: "${word}"  (from: "${context}")`,0);
   if(d){dict[word]={translit:d.translit||'',en:d.en||''};saveDict();if(currentWord&&currentWord.he===word){currentWord={he:word,translit:d.translit,en:d.en};document.getElementById('mTl').textContent=d.translit||'';document.getElementById('mEn').textContent=d.en||''}}
   else document.getElementById('mEn').textContent='Could not look up right now.';
 }
@@ -1018,7 +1026,7 @@ async function showVerbForms(){
   if(verbCache[word]){renderVerb(verbCache[word]);return}
   if(!getKey()){toast('Add your key in Settings first');return}
   area.innerHTML='<p class="muted" style="text-align:center;margin-top:14px">Loading forms…</p>';
-  const d=await simpleAI(`You are a Hebrew teacher. For the given Hebrew word, if it is a verb, give its conjugations in PRESENT, PAST and FUTURE. ${settings.nikud?'Use nikud.':'No nikud.'} For each tense use these persons: "I (m)","I (f)","you (m)","you (f)","he","she","we","they". Reply JSON {"is_verb":true,"infinitive_he":"","infinitive_en":"","present":[{"who_en":"","he":"","translit":""}],"past":[{"who_en":"","he":"","translit":""}],"future":[{"who_en":"","he":"","translit":""}]}. If it is NOT a verb, reply {"is_verb":false}.`,`Word: "${word}"`,0);
+  const d=await simpleAI(`You are a Hebrew teacher. For the given Hebrew word, if it is a verb, give its conjugations in PRESENT, PAST and FUTURE. ${settings.nikud?'Use nikud.':'No nikud.'} For each tense use these persons: "I (m)","I (f)","you (m)","you (f)","he","she","we","they". Reply JSON {"is_verb":true,"infinitive_he":"","infinitive_en":"","present":[{"who_en":"","he":"","translit":""}],"past":[{"who_en":"","he":"","translit":""}],"future":[{"who_en":"","he":"","translit":""}]}. Use British English spelling for the meanings. If it is NOT a verb, reply {"is_verb":false}.`,`Word: "${word}"`,0);
   if(!d){area.innerHTML='<p class="muted" style="text-align:center">Could not load right now.</p>';return}
   if(!d.is_verb){area.innerHTML='<p class="muted" style="text-align:center;margin-top:12px">That word isn\'t a verb 🙂</p>';return}
   verbCache[word]=d;saveVerbs();renderVerb(d);
@@ -1044,7 +1052,7 @@ async function helpAnswer(){
   renderSuggests([],true);
   const ctx=history.filter(h=>!h.hidden).slice(-6).map(h=>(h.role==='assistant'?'Tutor: ':'Me: ')+h.content).join('\n');
   const kn=knownList();
-  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet - keep suggestions to 1-2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
+  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet - keep suggestions to 1-2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
   renderSuggests(d&&d.suggestions?d.suggestions:[]);if(!d)toast('Could not get suggestions');
 }
 function renderSuggests(list,loading){const box=document.getElementById('suggests');box.innerHTML='';if(loading){box.innerHTML='<div class="chip">💡 thinking…</div>';return}(list||[]).forEach(s=>{const c=document.createElement('button');c.className='chip';c.innerHTML=`<span class="he">${esc(s.he)}</span><span class="tl">${esc(s.en||'')}</span>`;c.onclick=()=>{document.getElementById('msgInput').value=s.he;box.innerHTML='';document.getElementById('msgInput').focus()};box.appendChild(c)})}
