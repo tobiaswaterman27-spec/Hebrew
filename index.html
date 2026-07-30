@@ -184,6 +184,24 @@
   .vtable td{border:1px solid var(--line);padding:7px 9px;font-size:14px;text-align:left}
   .vtable td.he{direction:rtl;font-weight:700;text-align:right;font-size:16px}
   .vtable td .en{color:var(--muted);font-size:12px}
+  @keyframes popIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+  .bubble,.spot,.celebrate{animation:popIn .24s ease}
+  #app.noanim *{animation:none !important;transition:none !important}
+  .confetti{position:fixed;top:-14px;width:9px;height:14px;z-index:120;pointer-events:none;border-radius:2px;will-change:transform}
+  @keyframes fall{to{transform:translateY(110vh) rotate(600deg)}}
+  .home-hi{font-size:24px;font-weight:800;margin:2px 0 2px;direction:rtl;unicode-bidi:plaintext}
+  .home-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+  .home-grid{display:flex;gap:12px;margin-bottom:16px}
+  .home-grid .box{flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)}
+  .home-grid .n{font-size:26px;font-weight:800;color:var(--blue)}
+  .home-grid .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .home-cta{display:flex;align-items:center;gap:13px;background:var(--blue);color:#fff;border:none;border-radius:16px;padding:15px;width:100%;text-align:left;margin-bottom:12px;box-shadow:var(--shadow)}
+  .home-cta .emo{font-size:26px}
+  .home-cta .lbl{flex:1}.home-cta .lbl b{font-size:16px;display:block}.home-cta .lbl .s{font-size:13px;opacity:.85}
+  .home-cta.alt{background:#fff;color:var(--ink)}.home-cta.alt .lbl .s{color:var(--muted);opacity:1}
+  .setflex{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .setflex .toggle{flex:0 0 auto;width:150px}
+  .ta-code{width:100%;height:76px;font-family:monospace;font-size:12px;margin-bottom:8px}
   .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
   .toast.show{opacity:1}
   a{color:var(--blue)}
@@ -253,8 +271,11 @@
   </header>
 
   <main>
+    <!-- HOME -->
+    <div id="homePage" class="page"><div id="homeInner"></div></div>
+
     <!-- CHAT -->
-    <div id="chatPage" class="on">
+    <div id="chatPage">
       <div id="missionBar" class="mission hidden"></div>
       <div id="chatScroll"></div>
       <div class="suggests" id="suggests"></div>
@@ -379,14 +400,28 @@
       <div class="setrow"><label>Voice</label>
         <button class="btn small sec" onclick="testVoice()">🔊 Test voice</button>
         <p class="muted" style="margin-top:8px">The tutor's voice is made by OpenAI using your key, so it works on any phone. Costs a tiny amount per phrase, and repeats are free.</p></div>
+      <div class="setrow"><label>Sound &amp; animation</label>
+        <div class="setflex"><span>Animations</span><div class="toggle" id="fxAnim"><button data-x="on" onclick="setFx('anim',true)">On</button><button data-x="off" onclick="setFx('anim',false)">Off</button></div></div>
+        <div class="setflex"><span>Sound effects</span><div class="toggle" id="fxSfx"><button data-x="on" onclick="setFx('sfx',true)">On</button><button data-x="off" onclick="setFx('sfx',false)">Off</button></div></div>
+        <div class="setflex"><span>Music</span><div class="toggle" id="fxMusic"><button data-x="on" onclick="setFx('music',true)">On</button><button data-x="off" onclick="setFx('music',false)">Off</button></div></div>
+      </div>
+      <div class="setrow"><label>Back up your progress</label>
+        <p class="muted" style="margin-bottom:8px">Your words and packs live on this device only. Save a backup so you never lose them, or move to another phone.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small sec" onclick="copyBackup()">📋 Copy code</button><button class="btn small sec" onclick="downloadBackup()">⬇️ Download file</button></div>
+        <label style="margin-top:14px">Restore</label>
+        <textarea id="restoreCode" class="ta-code" placeholder="Paste a backup code here…" spellcheck="false"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small sec" onclick="restoreFromCode()">♻️ Restore from code</button><button class="btn small sec" onclick="document.getElementById('restoreFile').click()">📂 From file</button></div>
+        <input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="restoreFromFile(this.files[0])">
+      </div>
       <div class="setrow"><button class="btn ghost" onclick="resetAll()">Reset everything</button></div>
     </div>
   </main>
 
   <nav>
-    <button class="on" data-tab="chat" onclick="go('chat')"><span class="ic">💬</span>Chat</button>
+    <button class="on" data-tab="home" onclick="go('home')"><span class="ic">🏠</span>Home</button>
+    <button data-tab="chat" onclick="go('chat')"><span class="ic">💬</span>Chat</button>
     <button data-tab="learn" onclick="go('learn')"><span class="ic">📖</span>Learn</button>
-    <button data-tab="scn" onclick="go('scn')"><span class="ic">🎭</span>Scenarios</button>
+    <button data-tab="scn" onclick="go('scn')"><span class="ic">🎭</span>Scenes</button>
     <button data-tab="words" onclick="go('words')"><span class="ic">📚</span>Words</button>
     <button data-tab="set" onclick="go('set')"><span class="ic">⚙️</span>Settings</button>
   </nav>
@@ -414,6 +449,7 @@ let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',leve
 if(!settings.voice)settings.voice='auto';
 if(!settings.newWordTarget)settings.newWordTarget=5+Math.floor(Math.random()*6);
 if(settings.msgsSinceNew==null)settings.msgsSinceNew=0;
+if(!settings.fx)settings.fx={anim:true,sfx:true,music:false};
 if(!settings.packs)settings.packs={};
 let words=LS.get('yalla_words',[]);
 let dict=LS.get('yalla_dict',{});
@@ -551,10 +587,12 @@ function finishOnboard(skip){
 
 /* ================= navigation ================= */
 function go(tab){
-  const map={chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',stories:'storiesPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
+  const map={home:'homePage',chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',stories:'storiesPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
   document.querySelectorAll('.page,#chatPage').forEach(p=>p.classList.remove('on'));
   document.getElementById(map[tab]).classList.add('on');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===(tab==='stories'||tab==='pack'||tab==='practice'?'learn':tab)));
+  if(tab==='home')renderHome();
+  if(tab==='chat')ensureChatStarted();
   if(tab==='words')renderWords();
   if(tab==='scn')renderScenarios();
   if(tab==='learn')renderLearn();
@@ -659,7 +697,7 @@ function startReview(){
 }
 function showRev(){const w=reviewQueue[revIdx];document.getElementById('revWord').textContent=w.he;document.getElementById('revTl').textContent=w.translit||'';document.getElementById('revEn').textContent=w.en||'';document.getElementById('revReveal').classList.remove('show');document.getElementById('revShowBtn').style.display='';document.getElementById('revGrade').style.display='none';document.getElementById('reviewProg').textContent=`Card ${revIdx+1} of ${reviewQueue.length}`;speak(w.he)}
 function revShow(){document.getElementById('revReveal').classList.add('show');document.getElementById('revShowBtn').style.display='none';document.getElementById('revGrade').style.display='flex'}
-function revGrade(ok){const w=words.find(x=>x.he===reviewQueue[revIdx].he);if(w){w.seen++;w.box=ok?Math.min(6,w.box+1):Math.max(0,w.box-1);w.next=Date.now()+INTERVALS[w.box]*86400000;saveWords()}revIdx++;if(revIdx>=reviewQueue.length){document.getElementById('reviewCard').style.display='none';document.getElementById('reviewDone').classList.remove('hidden')}else showRev()}
+function revGrade(ok){if(ok)sfxCorrect();else sfxWrong();const w=words.find(x=>x.he===reviewQueue[revIdx].he);if(w){w.seen++;w.box=ok?Math.min(6,w.box+1):Math.max(0,w.box-1);w.next=Date.now()+INTERVALS[w.box]*86400000;saveWords()}revIdx++;if(revIdx>=reviewQueue.length){document.getElementById('reviewCard').style.display='none';document.getElementById('reviewDone').classList.remove('hidden');sfxComplete();confetti()}else showRev()}
 
 /* ================= learn / packs ================= */
 function allItems(){return PACKS.map(p=>({kind:'pack',p:p})).concat(THEMES.map(t=>({kind:'theme',t:t})))}
@@ -700,6 +738,7 @@ function finishPack(score,total){
   go('pack');
   document.getElementById('studyCard').style.display='none';
   document.getElementById('packDone').classList.remove('hidden');
+  sfxComplete();confetti();
   const isGen=String(currentPack.id).indexOf(':')>=0;
   const idx=PACKS.findIndex(p=>p.id===currentPack.id);
   const nextP=(!isGen&&idx>=0)?PACKS[idx+1]:null;
@@ -738,8 +777,8 @@ function prAnswer(btn,o){
   const opts=document.getElementById('prOpts'),q=prQueue[prIdx];
   const btns=opts.querySelectorAll('button');btns.forEach((b,i)=>{b.disabled=true;if(q.opts[i].correct)b.classList.add('correct')});
   const fb=document.getElementById('prFb');
-  if(o.correct){prScore++;fb.textContent='✓ Correct!';fb.style.color='var(--good)'}
-  else{btn.classList.remove('correct');btn.classList.add('wrong');fb.textContent='✗ Not quite';fb.style.color='#d33'}
+  if(o.correct){prScore++;fb.textContent='✓ Correct!';fb.style.color='var(--good)';sfxCorrect()}
+  else{btn.classList.remove('correct');btn.classList.add('wrong');fb.textContent='✗ Not quite';fb.style.color='#d33';sfxWrong()}
   document.getElementById('prNext').style.display='';
 }
 function prNextQ(){prIdx++;if(prIdx>=prQueue.length)finishPack(prScore,prQueue.length);else showPr()}
@@ -971,7 +1010,7 @@ function addAI(d,replay){
   if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
-  if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null}
+  if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null;sfxComplete();confetti()}
   scrollDown();
 }
 function addSpotlight(w){const s=document.createElement('div');s.className='spot';s.innerHTML=`<div class="tag">✨ New word</div><div class="big">${esc(w.he)}</div><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div>`;const row=document.createElement('div');row.className='brow';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Hear it';b.onclick=()=>speak(w.he);row.appendChild(b);s.appendChild(row);chatScroll().appendChild(s)}
@@ -1000,7 +1039,7 @@ function maybeNudgePack(){
   const item=nextUnfinished();
   if(!item)return;
   chatTurns++;
-  if(chatTurns>=10){chatTurns=0;addPackNudge(item)}
+  if(chatTurns>=10){chatTurns=0;addPackNudge(item);sfxNudge()}
 }
 function addPackNudge(item){
   const emo=item.kind==='pack'?item.p.emo:item.t.emo;
@@ -1099,6 +1138,7 @@ function fillSettings(){
   document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
   document.getElementById('setLevel').value=settings.level;updateLvlLabel();
   document.getElementById('setName').value=settings.name||'';document.getElementById('setHeName').value=settings.heName||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
+  [['anim','fxAnim'],['sfx','fxSfx'],['music','fxMusic']].forEach(function(p){const box=document.getElementById(p[1]);if(box)box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.x==='on')===!!(settings.fx&&settings.fx[p[0]])))});
 }
 function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
@@ -1109,15 +1149,65 @@ function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){
 let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
 function resetAll(){if(!confirm('Reset everything - words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
 
+/* ================= sound effects & music ================= */
+let actx=null;
+function audioCtx(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){actx=null}}return actx}
+function fxOn(k){return settings.fx&&settings.fx[k]}
+function tone(freq,start,dur,type,vol){const ac=audioCtx();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=freq;o.connect(g);g.connect(ac.destination);const t=ac.currentTime+start;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.12,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.03)}
+function sfxSeq(seq,type,vol){if(!fxOn('sfx'))return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();let t=0;seq.forEach(n=>{tone(n[0],t,n[1],type,vol);t+=n[1]*0.9})}
+function sfxCorrect(){sfxSeq([[660,.12],[880,.16]],'triangle',.13)}
+function sfxWrong(){sfxSeq([[220,.16],[165,.22]],'sawtooth',.08)}
+function sfxComplete(){sfxSeq([[523,.12],[659,.12],[784,.12],[1047,.3]],'triangle',.13)}
+function sfxTap(){sfxSeq([[880,.05]],'sine',.05)}
+function sfxNudge(){sfxSeq([[587,.1],[784,.15]],'sine',.09)}
+let musicTimer=null,musicStep=0;
+const MUSIC=[[261.63,392.00],[293.66,440.00],[329.63,392.00],[392.00,523.25],[349.23,440.00],[293.66,392.00]];
+function musicNote(freq,vol,dur){const ac=audioCtx();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(ac.destination);const t=ac.currentTime;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.3);g.gain.linearRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.05)}
+function startMusic(){if(musicTimer)return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();musicStep=0;const tick=function(){const ch=MUSIC[musicStep%MUSIC.length];musicNote(ch[0],0.05,1.6);musicNote(ch[1],0.03,1.6);musicStep++};tick();musicTimer=setInterval(tick,1700)}
+function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}}
+function applyMusic(){if(fxOn('music'))startMusic();else stopMusic()}
+function applyAnim(){const a=document.getElementById('app');if(a)a.classList.toggle('noanim',!fxOn('anim'))}
+function confetti(){if(!fxOn('anim'))return;const colors=['#0038b8','#ffffff','#8fb0ff','#ffd54a','#3f6fe0'];for(let i=0;i<44;i++){const d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=colors[i%colors.length];d.style.animation='fall '+(1.4+Math.random()*1.3)+'s linear forwards';document.body.appendChild(d);setTimeout(function(){d.remove()},2900)}}
+function unlockAudioOnce(){const ac=audioCtx();if(ac&&ac.state==='suspended')ac.resume();applyMusic()}
+document.addEventListener('pointerdown',unlockAudioOnce,{once:true});
+function setFx(k,v){settings.fx[k]=v;saveSettings();fillSettings();if(k==='music')applyMusic();if(k==='anim')applyAnim();if(v&&k!=='music')sfxTap()}
+
+/* ================= home ================= */
+function renderHome(){
+  const el=document.getElementById('homeInner');if(!el)return;
+  const known=words.length,mastered=words.filter(w=>w.box>=2).length;
+  const packsDone=allItems().filter(itemDone).length;
+  const due=words.filter(w=>w.next<=Date.now()).length;
+  const next=nextUnfinished(),nm=settings.heName||settings.name;
+  let h=`<div class="home-hi">${nm?('שלום, '+esc(nm)+'! 👋'):'שלום! 👋'}</div><div class="home-sub">Yalla - let's learn some Hebrew.</div>`;
+  h+=`<div class="home-grid"><div class="box"><div class="n">${known}</div><div class="l">words met</div></div><div class="box"><div class="n">${mastered}</div><div class="l">known</div></div><div class="box"><div class="n">${packsDone}</div><div class="l">packs done</div></div></div>`;
+  h+=`<button class="home-cta" onclick="go('chat')"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
+  if(next)h+=`<button class="home-cta alt" onclick="homeNext()"><span class="emo">${next.kind==='pack'?next.p.emo:next.t.emo}</span><span class="lbl"><b>Learn: ${esc(next.kind==='pack'?next.p.title:next.t.title)}</b><span class="s">Your next pack</span></span><span>→</span></button>`;
+  if(due>0)h+=`<button class="home-cta alt" onclick="startReview()"><span class="emo">📚</span><span class="lbl"><b>Review ${due} word${due===1?'':'s'}</b><span class="s">Keep them fresh</span></span><span>→</span></button>`;
+  h+=`<button class="home-cta alt" onclick="go('stories')"><span class="emo">📖</span><span class="lbl"><b>Read a story</b><span class="s">At your level</span></span><span>→</span></button>`;
+  h+=`<button class="home-cta alt" onclick="go('scn')"><span class="emo">🎭</span><span class="lbl"><b>Try a scenario</b><span class="s">Order a coffee, meet someone…</span></span><span>→</span></button>`;
+  el.innerHTML=h;
+}
+function homeNext(){const it=nextUnfinished();if(!it)return;it.kind==='pack'?openPack(it.p):openThemeLevel(it.t)}
+function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(getKey())greet();else showNoKey()}
+
+/* ================= backup & restore ================= */
+const BK_KEYS=['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks'];
+function makeBackup(){const o={app:'yalla',v:1,t:Date.now(),data:{}};BK_KEYS.forEach(k=>{const v=localStorage.getItem(k);if(v!=null)o.data[k]=v});return o}
+function backupCode(){return btoa(unescape(encodeURIComponent(JSON.stringify(makeBackup()))))}
+function copyBackup(){const code=backupCode();const ta=document.createElement('textarea');ta.value=code;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();if(ok)toast('Backup code copied - paste it somewhere safe');else{const r=document.getElementById('restoreCode');if(r){r.value=code;toast('Copy failed - code shown below, copy it manually')}}sfxTap()}
+function downloadBackup(){const blob=new Blob([JSON.stringify(makeBackup())],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='yalla-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('Backup file downloaded');sfxTap()}
+function applyBackup(obj){if(!obj||!obj.data){toast('That backup looks invalid');return}if(!confirm('Restore this backup? It will replace the words, packs and settings on this device.'))return;BK_KEYS.forEach(k=>{if(obj.data[k]!=null)localStorage.setItem(k,obj.data[k])});toast('Restored! Reloading…');setTimeout(function(){location.reload()},700)}
+function restoreFromCode(){const t=(document.getElementById('restoreCode').value||'').trim();if(!t){toast('Paste a backup code first');return}let obj;try{obj=JSON.parse(decodeURIComponent(escape(atob(t))))}catch(e){try{obj=JSON.parse(t)}catch(e2){toast('That code could not be read');return}}applyBackup(obj)}
+function restoreFromFile(file){if(!file)return;const r=new FileReader();r.onload=function(){let obj;try{obj=JSON.parse(r.result)}catch(e){toast('Could not read that file');return}applyBackup(obj)};r.readAsText(file)}
+
 /* ================= boot ================= */
 function bootMain(){
-  buildKb();rebuildKnown();refreshCounters();fillSettings();
+  buildKb();rebuildKnown();refreshCounters();fillSettings();applyAnim();applyMusic();
   const alive=history.filter(h=>!h.hidden);
   if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
-  else{
-    const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
-    if(brandNew)openPack(PACKS[0]);else greet();
-  }
+  const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
+  if(brandNew)openPack(PACKS[0]);else{renderHome();go('home')}
 }
 document.getElementById('msgInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
 document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});

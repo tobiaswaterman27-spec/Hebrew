@@ -26,6 +26,9 @@ It's a single self-contained web page: no install, no build step. Open it in a b
 - 🔊 **Voice** - the tutor reads Hebrew aloud (made by OpenAI, so it works on any phone).
 - 🚹🚺 **Gender-aware** and ✍️ **Hebrew name** - teaches the correct forms and spells your name the way you want.
 - 🔤 **Vowels on/off** (nikud) and a difficulty dial - your choice, changeable any time.
+- 🏠 **Home screen** - your progress (words met, known, packs done) plus quick "carry on" buttons.
+- 💾 **Backup & restore** - save your progress to a file or a code (Settings), and restore it on any device.
+- ✨🔔🎵 **Animations, sound effects and music** - gentle feedback sounds and a confetti burst on wins, plus an optional background loop. All toggle on/off in Settings.
 
 ## Getting started
 
