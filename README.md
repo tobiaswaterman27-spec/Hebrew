@@ -15,7 +15,7 @@ It's a single self-contained web page: no install, no build step. Open it in a b
 
 - 💬 **Chat tutor** - everyday Modern Hebrew that reacts to you and varies what it says (not just "how are you?").
 - 🧠 **Stays understandable** - the app tracks the words you know and keeps the tutor to those plus, occasionally, one new word. If a reply comes out too hard, the app quietly asks for a simpler one before you see it.
-- 🔵 **Blue words** - any Hebrew word you haven't mastered yet shows in blue. Tap it to hear it, see its meaning, and add it to your list. Words stay blue until you've actually learned them (in a pack, or by reviewing).
+- 🔵 **Blue words** - any Hebrew word that isn't in your word list yet shows in blue. Tap it to hear it, see its meaning, and save it - once it's in your list it's no longer blue.
 - 📖 **Word packs** - an ordered path (First words → More people → Handy phrases → verbs → food → numbers…), each ending in **practice games** (Hebrew↔English, listen-and-choose) with a score.
 - 🎭 **Scenarios** - role-plays with a mission (café, shop, taxi, market, directions…), with a ✅ at the end.
 - ✏️ **Gentle corrections** and 🔤 **grammar tips** (with a tap-a-verb conjugation table).

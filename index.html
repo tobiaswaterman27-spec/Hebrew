@@ -599,8 +599,9 @@ async function ttsUrl(text,slow){
   }catch(e){return null}
 }
 async function speakAI(text,slow){const url=await ttsUrl(text,slow);if(url)playUrl(url);else deviceSpeak(text)}
-function playUrl(url){try{if(aiAudioEl){aiAudioEl.pause()}aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
-function playUrlAwait(url){return new Promise(function(res){try{if(aiAudioEl)aiAudioEl.pause();aiAudioEl=new Audio(url);aiAudioEl.onended=function(){res()};aiAudioEl.onerror=function(){res()};aiAudioEl.play()}catch(e){res()}})}
+function stopAllAudio(){try{if('speechSynthesis'in window)speechSynthesis.cancel()}catch(e){}try{if(aiAudioEl){aiAudioEl.pause();aiAudioEl.onended=null}}catch(e){}}
+function playUrl(url){try{stopAllAudio();aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
+function playUrlAwait(url){return new Promise(function(res){try{stopAllAudio();aiAudioEl=new Audio(url);aiAudioEl.onended=function(){res()};aiAudioEl.onerror=function(){res()};aiAudioEl.play()}catch(e){res()}})}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
 function speak(text,slow){if(!text)return;speakAI(text,slow)}
 async function playStory(){
@@ -819,10 +820,10 @@ async function newStory(){
   const area=document.getElementById('storyArea');
   area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
   const btn=document.getElementById('storyBtn');btn.disabled=true;
-  const mastered=words.filter(w=>w.box>=2).map(w=>w.he+' ('+w.en+')').slice(-200);
-  if(mastered.length<8){btn.disabled=false;area.innerHTML='<div class="empty"><div class="big">📖</div><b>Learn a few more words first</b><p class="muted">Finish a couple of packs in 📖 Learn, then your stories will use words you know.</p></div>';return}
-  let d=await storyCall(mastered,false),tries=0;
-  while(d&&Array.isArray(d.sentences)&&countUnmastered(d.sentences.map(s=>s.he).join(' '))>3&&tries<2){d=await storyCall(mastered,true);tries++}
+  const vocab=words.map(w=>w.he+' ('+w.en+')').slice(-220);
+  if(vocab.length<8){btn.disabled=false;area.innerHTML='<div class="empty"><div class="big">📖</div><b>Learn a few more words first</b><p class="muted">Finish a couple of packs in 📖 Learn, then your stories will use words you know.</p></div>';return}
+  let d=await storyCall(vocab,false),tries=0;
+  while(d&&Array.isArray(d.sentences)&&countUnknown(d.sentences.map(s=>s.he).join(' '))>3&&tries<2){d=await storyCall(vocab,true);tries++}
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
   currentStory=d;renderStory(d);
@@ -953,13 +954,15 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+(!isMastered(p)?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+(!isKnownWord(p)?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
+  const heText=(d.reply_he||'').trim();
+  const shown=heText||(d.reply_en||'').trim()||'…';
   const b=document.createElement('div');b.className='bubble ai';
-  const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,d.reply_he||'');b.appendChild(t);
+  const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,shown);b.appendChild(t);
   const row=document.createElement('div');row.className='brow';
-  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(d.reply_he);
+  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(heText);
   const hp=document.createElement('button');hp.className='icon-btn';hp.textContent='🇬🇧 translation';
   const help=document.createElement('div');help.className='help-line';help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`+(d.reply_literal?`<div style="margin-top:5px">📝 Literal: ${esc(d.reply_literal)}</div>`:'');
   hp.onclick=()=>help.classList.toggle('show');row.appendChild(sp);row.appendChild(hp);b.appendChild(row);b.appendChild(help);
@@ -1010,8 +1013,8 @@ function addPackNudge(item){
   row.appendChild(yes);row.appendChild(no);el.appendChild(row);
   chatScroll().appendChild(el);scrollDown();
 }
-async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:r.data.reply_he||'',data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack()}
+async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
+async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack()}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem - check your connection and try again.';if(r.error==='http')m='OpenAI error - check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
 function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`)}
