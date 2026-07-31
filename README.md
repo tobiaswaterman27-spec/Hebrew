@@ -24,6 +24,8 @@ It's a single self-contained web page: no install, no build step. Open it in a b
 - 💡 **Help me answer** - suggestions built only from words you already know.
 - ⌨️ **Pop-up Hebrew keyboard** - type Hebrew even without a Hebrew phone keyboard.
 - 🔊 **Voice** - the tutor reads Hebrew aloud (made by OpenAI, so it works on any phone).
+- 📞 **Call mode** - a hands-free voice call with the tutor: you speak, it hears you and replies out loud, with live captions you can tap. Tap 📞 in the header or on Home.
+- 🎤 **Speak instead of type** - a mic button in the chat turns your speech into Hebrew text (via OpenAI Whisper) so you can talk instead of typing.
 - 🚹🚺 **Gender-aware** and ✍️ **Hebrew name** - teaches the correct forms and spells your name the way you want.
 - 🔤 **Vowels on/off** (nikud) and a difficulty dial - your choice, changeable any time.
 - 🏠 **Home screen** - your progress (words met, known, packs done) plus quick "carry on" buttons.

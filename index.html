@@ -205,6 +205,32 @@
   .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
   .toast.show{opacity:1}
   a{color:var(--blue)}
+  .callbtn{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:17px;border-radius:50%;width:36px;height:36px;margin-right:8px}
+  .tool.rec{background:#ffdede;color:#c00;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  #callView{position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,#0038b8,#001a55);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:24px 20px 28px;max-width:680px;margin:0 auto}
+  #callView.show{display:flex}
+  .call-top{font-size:15px;opacity:.9;margin-top:8px;min-height:20px}
+  .orb-wrap{margin-top:12px}
+  .orb{width:148px;height:148px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:54px}
+  .orb.idle{animation:orbIdle 3s ease-in-out infinite}
+  .orb.listening{background:rgba(120,230,160,.28);animation:orbListen 1.1s ease-in-out infinite}
+  .orb.speaking{animation:orbSpeak .9s ease-in-out infinite}
+  .orb.thinking{animation:orbThink 1.1s linear infinite}
+  @keyframes orbIdle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  @keyframes orbListen{0%,100%{box-shadow:0 0 0 0 rgba(120,230,160,.5);transform:scale(1)}50%{box-shadow:0 0 0 26px rgba(120,230,160,0);transform:scale(1.06)}}
+  @keyframes orbSpeak{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5);transform:scale(1)}50%{box-shadow:0 0 0 24px rgba(255,255,255,0);transform:scale(1.05)}}
+  @keyframes orbThink{to{transform:rotate(360deg)}}
+  .call-caps{flex:1;width:100%;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:14px 4px}
+  .call-caption{font-size:23px;line-height:1.5;direction:rtl;unicode-bidi:plaintext}
+  .call-caption .w{border-bottom-color:rgba(255,255,255,.45)}
+  .call-caption .w.neww{color:#ffd54a;border-bottom-color:#ffd54a;font-weight:800}
+  .call-you{margin-top:18px;font-size:16px;opacity:.9;direction:rtl;unicode-bidi:plaintext}
+  .call-controls{display:flex;align-items:center;gap:24px;margin-bottom:14px}
+  .call-mic{width:78px;height:78px;border-radius:50%;background:#fff;color:var(--blue);border:none;font-size:32px}
+  .call-mic.rec{background:#ff5a5a;color:#fff;animation:pulse 1s infinite}
+  .call-side{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;border:none;font-size:22px}
+  .call-end{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:22px;padding:11px 22px;font-size:15px;font-weight:600}
 </style>
 
 <div id="app">
@@ -267,7 +293,7 @@
   <!-- ============ MAIN ============ -->
   <header>
     <div class="t">Yalla <small class="he">יאללה</small></div>
-    <div class="known" id="knownBadge">📚 0 words</div>
+    <div style="display:flex;align-items:center"><button class="callbtn" onclick="startCall()" title="Call the tutor">📞</button><div class="known" id="knownBadge">📚 0 words</div></div>
   </header>
 
   <main>
@@ -283,6 +309,7 @@
       <div id="hebKb"></div>
       <div class="composer">
         <div class="ctools">
+          <button class="tool" id="micBtn" onclick="toggleMic('chat')">🎤 Speak</button>
           <button class="tool" onclick="toggleBuild()">🧱 Build</button>
           <button class="tool" onclick="toggleKb()">⌨️ <span class="he">עברית</span></button>
           <button class="tool" onclick="helpAnswer()">💡 Help</button>
@@ -424,6 +451,18 @@
     <button data-tab="words" onclick="go('words')"><span class="ic">📚</span>Words</button>
     <button data-tab="set" onclick="go('set')"><span class="ic">⚙️</span>Settings</button>
   </nav>
+</div>
+
+<div id="callView">
+  <div class="call-top" id="callState">Tap the mic and talk</div>
+  <div class="orb-wrap"><div class="orb idle" id="callOrb">🗣️</div></div>
+  <div class="call-caps"><div id="callCaption" class="call-caption"></div><div id="callYou" class="call-you"></div></div>
+  <div class="call-controls">
+    <button class="call-side" onclick="callSlower()" title="Say it again slower">🐢</button>
+    <button class="call-mic" id="callMic" onclick="toggleMic('call')">🎤</button>
+    <button class="call-side" onclick="callHelp()" title="Help me answer">💡</button>
+  </div>
+  <button class="call-end" onclick="endCall()">✕ End call</button>
 </div>
 
 <div id="modal" onclick="if(event.target.id==='modal')closeModal()">
@@ -655,6 +694,7 @@ function testVoice(){if(!getKey()){toast('Add your OpenAI key in Settings first'
 const INTERVALS=[0,1,2,4,8,16,32];
 function addWord(w,known){
   if(!w.he)return;
+  if(nameSet.has(normHe(w.he)))return;
   dict[w.he]={translit:w.translit||'',en:w.en||''};saveDict();
   let ex=words.find(x=>x.he===w.he);
   if(ex){if(!ex.translit)ex.translit=w.translit;if(!ex.en)ex.en=w.en;if(known&&ex.box<2){ex.box=2}}
@@ -851,7 +891,7 @@ async function openThemeLevel(theme){
 let currentStory=null;
 async function storyCall(list,stricter){
   const vocab=list.length?list.join('; '):'(the learner knows very few words yet)';
-  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
+  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. Proper names (people/places) are NOT vocabulary - list any you use in "names" and never put a name in new_words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"names":[],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
 }
 async function newStory(){
   if(!getKey()){toast('Add your OpenAI key in Settings first');return}
@@ -864,7 +904,7 @@ async function newStory(){
   while(d&&Array.isArray(d.sentences)&&countUnknown(d.sentences.map(s=>s.he).join(' '))>3&&tries<2){d=await storyCall(vocab,true);tries++}
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
-  currentStory=d;renderStory(d);
+  addNames(d.names);currentStory=d;renderStory(d);
   if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)addWord(w)});
 }
 function renderStory(d){
@@ -963,9 +1003,10 @@ Also:
 PUNCTUATION: Never use em dashes or en dashes ("-" or "-") anywhere. Use commas, full stops, or a simple hyphen "-" instead.
 
 "reply_literal" = a word-for-word LITERAL English translation of your Hebrew (it may sound clunky in English - that is the point, it shows how the Hebrew is built).
+"names" = list any proper names (people or places) that appear in your reply_he. Names are NOT vocabulary: NEVER put a proper name in new_words.
 
 Reply with ONE JSON object only (no markdown) with EXACTLY these keys:
-{"reply_he":"","reply_translit":"","reply_en":"","reply_literal":"","new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
+{"reply_he":"","reply_translit":"","reply_en":"","reply_literal":"","names":[],"new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
 }
 
 /* ================= OpenAI ================= */
@@ -992,9 +1033,10 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+(!isKnownWord(p)?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+((!isKnownWord(p)&&!nameSet.has(normHe(p)))?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
+  addNames(d.names);
   const heText=(d.reply_he||'').trim();
   const shown=heText||(d.reply_en||'').trim()||'…';
   const b=document.createElement('div');b.className='bubble ai';
@@ -1143,7 +1185,7 @@ function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
 function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
 function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
-function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings()}
+function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings();rebuildNames()}
 function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
 let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
 function resetAll(){if(!confirm('Reset everything - words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
@@ -1174,7 +1216,8 @@ function renderHome(){
   const next=nextUnfinished(),nm=settings.heName||settings.name;
   let h=`<div class="home-hi">${nm?('שלום, '+esc(nm)+'! 👋'):'שלום! 👋'}</div><div class="home-sub">Yalla - let's learn some Hebrew.</div>`;
   h+=`<div class="home-grid"><div class="box"><div class="n">${known}</div><div class="l">words met</div></div><div class="box"><div class="n">${mastered}</div><div class="l">known</div></div><div class="box"><div class="n">${packsDone}</div><div class="l">packs done</div></div></div>`;
-  h+=`<button class="home-cta" onclick="go('chat')"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
+  h+=`<button class="home-cta" onclick="startCall()"><span class="emo">📞</span><span class="lbl"><b>Call your tutor</b><span class="s">Speak out loud, hands-free</span></span><span>→</span></button>`;
+  h+=`<button class="home-cta alt" onclick="go('chat')"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
   if(next)h+=`<button class="home-cta alt" onclick="homeNext()"><span class="emo">${next.kind==='pack'?next.p.emo:next.t.emo}</span><span class="lbl"><b>Learn: ${esc(next.kind==='pack'?next.p.title:next.t.title)}</b><span class="s">Your next pack</span></span><span>→</span></button>`;
   if(due>0)h+=`<button class="home-cta alt" onclick="startReview()"><span class="emo">📚</span><span class="lbl"><b>Review ${due} word${due===1?'':'s'}</b><span class="s">Keep them fresh</span></span><span>→</span></button>`;
   h+=`<button class="home-cta alt" onclick="go('stories')"><span class="emo">📖</span><span class="lbl"><b>Read a story</b><span class="s">At your level</span></span><span>→</span></button>`;
@@ -1194,9 +1237,82 @@ function applyBackup(obj){if(!obj||!obj.data){toast('That backup looks invalid')
 function restoreFromCode(){const t=(document.getElementById('restoreCode').value||'').trim();if(!t){toast('Paste a backup code first');return}let obj;try{obj=JSON.parse(decodeURIComponent(escape(atob(t))))}catch(e){try{obj=JSON.parse(t)}catch(e2){toast('That code could not be read');return}}applyBackup(obj)}
 function restoreFromFile(file){if(!file)return;const r=new FileReader();r.onload=function(){let obj;try{obj=JSON.parse(r.result)}catch(e){toast('Could not read that file');return}applyBackup(obj)};r.readAsText(file)}
 
+/* ================= names (not vocabulary) ================= */
+let nameSet=new Set();
+function rebuildNames(){nameSet=new Set();if(settings.heName)String(settings.heName).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)nameSet.add(n)})}
+function addNames(arr){if(Array.isArray(arr))arr.forEach(x=>{if(x)String(x).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)nameSet.add(n)})})}
+
+/* ================= microphone -> text (Whisper) ================= */
+let mediaRec=null,recChunks=[],recording=false,micMode='chat';
+function setMicUI(on){const cb=document.getElementById('micBtn');if(cb){cb.textContent=(on&&micMode==='chat')?'⏺ Stop':'🎤 Speak';cb.classList.toggle('rec',on&&micMode==='chat')}const mb=document.getElementById('callMic');if(mb)mb.classList.toggle('rec',on&&micMode==='call');if(micMode==='call')setOrb(on?'listening':'thinking')}
+async function toggleMic(mode){
+  if(recording){stopMic();return}
+  micMode=mode||'chat';
+  if(!getKey()){toast('Add your OpenAI key in Settings first');return}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==='undefined'){toast('Microphone is not supported in this browser');return}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[];mediaRec=new MediaRecorder(stream);
+    mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data)};
+    mediaRec.onstop=async function(){stream.getTracks().forEach(t=>t.stop());const blob=new Blob(recChunks,{type:(mediaRec&&mediaRec.mimeType)||'audio/webm'});await transcribe(blob)};
+    mediaRec.start();recording=true;setMicUI(true);sfxTap();
+  }catch(e){toast('Could not use the mic - check the permission')}
+}
+function stopMic(){if(mediaRec&&recording){recording=false;setMicUI(false);try{mediaRec.stop()}catch(e){}}}
+async function transcribe(blob){
+  const key=getKey();if(!key)return;
+  if(micMode==='call')setOrb('thinking');else toast('Listening…');
+  try{
+    const fd=new FormData();fd.append('file',blob,'speech.webm');fd.append('model','whisper-1');
+    const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+    if(!res.ok){if(micMode==='call')setOrb('idle');toast('Could not hear that - try again');return}
+    const data=await res.json();const text=(data.text||'').trim();
+    if(!text){if(micMode==='call')setOrb('idle');toast("Didn't catch anything");return}
+    if(micMode==='call')callUserSaid(text);
+    else{const inp=document.getElementById('msgInput');inp.value=(inp.value?inp.value+' ':'')+text;inp.focus();inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px'}
+  }catch(e){if(micMode==='call')setOrb('idle');toast('Could not transcribe')}
+}
+
+/* ================= call / speaking mode ================= */
+let callOn=false,callLastHe='';
+function startCall(){
+  if(!getKey()){toast('Add your OpenAI key in Settings first');go('set');return}
+  callOn=true;document.getElementById('callView').classList.add('show');
+  document.getElementById('callCaption').innerHTML='<span style="opacity:.85">שלום! 👋</span>';document.getElementById('callYou').textContent='';
+  callTutorTurn('[You are now on a friendly voice call with the learner. Greet them warmly in very simple Modern Hebrew and ask one easy question to start chatting. Keep it short.]',true);
+}
+function endCall(){callOn=false;stopMic();try{if(aiAudioEl)aiAudioEl.pause()}catch(e){}document.getElementById('callView').classList.remove('show')}
+function setOrb(state){const o=document.getElementById('callOrb');if(o)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'Listening…':state==='thinking'?'Thinking…':state==='speaking'?'Speaking…':'Tap the mic and talk'}
+async function callTutorTurn(prime,isGreet){
+  setOrb('thinking');
+  const r=await getReply(isGreet?prime:null);
+  if(!callOn)return;
+  if(r.error){setOrb('idle');document.getElementById('callCaption').innerHTML='<span style="opacity:.8">Something went wrong. Tap the mic to try again.</span>';return}
+  if(isGreet)history.push({role:'user',content:prime,hidden:true});
+  history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();
+  updateNewWordCounter(r.data);
+  renderCallReply(r.data);
+}
+function renderCallReply(d){
+  addNames(d.names);
+  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)addWord(w)});
+  callLastHe=(d.reply_he||'').trim();
+  const cap=document.getElementById('callCaption');cap.innerHTML='';
+  const he=document.createElement('div');he.className='hetext';renderHebrewInto(he,callLastHe||d.reply_en||'…');cap.appendChild(he);
+  const en=document.createElement('div');en.style.cssText='display:none;margin-top:8px;color:rgba(255,255,255,.85);direction:ltr';en.innerHTML=esc(d.reply_en||'')+(d.reply_literal?'<div style="margin-top:3px">📝 '+esc(d.reply_literal)+'</div>':'');
+  const tr=document.createElement('button');tr.className='call-end';tr.style.cssText='margin-top:12px;padding:6px 14px;font-size:13px';tr.textContent='🇬🇧 translation';tr.onclick=function(){en.style.display=en.style.display==='none'?'block':'none'};
+  cap.appendChild(tr);cap.appendChild(en);
+  setOrb('speaking');
+  speakThen(callLastHe,function(){if(callOn)setOrb('idle')});
+}
+async function speakThen(text,cb){if(!text){if(cb)cb();return}const url=await ttsUrl(text,false);if(url)await playUrlAwait(url);else deviceSpeak(text);if(cb)cb()}
+function callUserSaid(text){document.getElementById('callYou').textContent='🗣️ '+text;history.push({role:'user',content:text});saveHistory();callTutorTurn(null,false)}
+function callSlower(){if(callLastHe)speak(callLastHe,true)}
+async function callHelp(){const kn=knownList();setOrb('thinking');const d=await simpleAI(`The learner is on a Hebrew voice call and is stuck. Suggest ONE short, natural thing they could say next in Hebrew using ONLY words they know: ${kn.length?kn.join('; '):'(very few - keep to 1-2 basic words)'}. Use British English spelling. Reply JSON {"he":"","translit":"","en":""}.`,'help',0.4);if(callOn)setOrb('idle');if(d&&d.he)document.getElementById('callYou').innerHTML='💡 Try: <b class="hetext">'+esc(d.he)+'</b> <span style="opacity:.8">('+esc(d.en||'')+')</span>'}
+
 /* ================= boot ================= */
 function bootMain(){
-  buildKb();rebuildKnown();refreshCounters();fillSettings();applyAnim();
+  buildKb();rebuildKnown();rebuildNames();refreshCounters();fillSettings();applyAnim();
   const alive=history.filter(h=>!h.hidden);
   if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
   const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
