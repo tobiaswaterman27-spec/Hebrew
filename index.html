@@ -172,7 +172,7 @@
   .tile{background:#fff;border:1px solid var(--blue-mid);color:var(--ink);border-radius:9px;padding:9px 12px;font-size:17px;direction:rtl}
   .tile:active{background:var(--blue-soft)}
 
-  #modal{position:fixed;inset:0;background:rgba(14,23,48,.45);z-index:80;display:none;align-items:flex-end;justify-content:center}
+  #modal{position:fixed;inset:0;background:rgba(14,23,48,.45);z-index:130;display:none;align-items:flex-end;justify-content:center}
   #modal.show{display:flex}
   .sheet{background:#fff;width:100%;max-width:680px;border-radius:20px 20px 0 0;padding:20px 20px 30px;animation:up .2s ease;max-height:88vh;overflow-y:auto}
   @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:translateY(0);opacity:1}}
@@ -215,12 +215,12 @@
   .orb{width:148px;height:148px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:54px}
   .orb.idle{animation:orbIdle 3s ease-in-out infinite}
   .orb.listening{background:rgba(120,230,160,.28);animation:orbListen 1.1s ease-in-out infinite}
-  .orb.speaking{animation:orbSpeak .9s ease-in-out infinite}
-  .orb.thinking{animation:orbThink 1.1s linear infinite}
+  .orb.speaking{animation:orbGlow 1.2s ease-in-out infinite}
+  .orb.thinking{animation:orbThinkPulse .9s ease-in-out infinite}
   @keyframes orbIdle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
   @keyframes orbListen{0%,100%{box-shadow:0 0 0 0 rgba(120,230,160,.5);transform:scale(1)}50%{box-shadow:0 0 0 26px rgba(120,230,160,0);transform:scale(1.06)}}
-  @keyframes orbSpeak{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5);transform:scale(1)}50%{box-shadow:0 0 0 24px rgba(255,255,255,0);transform:scale(1.05)}}
-  @keyframes orbThink{to{transform:rotate(360deg)}}
+  @keyframes orbGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.4)}50%{box-shadow:0 0 0 22px rgba(255,255,255,0)}}
+  @keyframes orbThinkPulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}
   .call-caps{flex:1;width:100%;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:14px 4px}
   .call-caption{font-size:23px;line-height:1.5;direction:rtl;unicode-bidi:plaintext}
   .call-caption .w{border-bottom-color:rgba(255,255,255,.45)}
@@ -1249,6 +1249,7 @@ async function toggleMic(mode){
   if(recording){stopMic();return}
   micMode=mode||'chat';
   if(!getKey()){toast('Add your OpenAI key in Settings first');return}
+  if(!window.isSecureContext){toast('The mic needs the app opened from its web link (https), not a saved file');if(micMode==='call')setOrb('idle');return}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==='undefined'){toast('Microphone is not supported in this browser');return}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
@@ -1256,14 +1257,15 @@ async function toggleMic(mode){
     mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data)};
     mediaRec.onstop=async function(){stream.getTracks().forEach(t=>t.stop());const blob=new Blob(recChunks,{type:(mediaRec&&mediaRec.mimeType)||'audio/webm'});await transcribe(blob)};
     mediaRec.start();recording=true;setMicUI(true);sfxTap();
-  }catch(e){toast('Could not use the mic - check the permission')}
+  }catch(e){const msg=(e&&e.name==='NotAllowedError')?'Mic permission was blocked - allow it in your browser settings':'Could not use the mic';toast(msg);if(micMode==='call')setOrb('idle')}
 }
 function stopMic(){if(mediaRec&&recording){recording=false;setMicUI(false);try{mediaRec.stop()}catch(e){}}}
+function audioExt(mime){mime=(mime||'').toLowerCase();if(mime.indexOf('mp4')>=0||mime.indexOf('m4a')>=0)return'mp4';if(mime.indexOf('ogg')>=0)return'ogg';if(mime.indexOf('mpeg')>=0)return'mp3';if(mime.indexOf('wav')>=0)return'wav';return'webm'}
 async function transcribe(blob){
   const key=getKey();if(!key)return;
-  if(micMode==='call')setOrb('thinking');else toast('Listening…');
+  if(micMode==='call')setOrb('thinking');else toast('Transcribing…');
   try{
-    const fd=new FormData();fd.append('file',blob,'speech.webm');fd.append('model','whisper-1');
+    const fd=new FormData();fd.append('file',blob,'speech.'+audioExt(blob.type));fd.append('model','whisper-1');
     const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
     if(!res.ok){if(micMode==='call')setOrb('idle');toast('Could not hear that - try again');return}
     const data=await res.json();const text=(data.text||'').trim();
@@ -1281,8 +1283,24 @@ function startCall(){
   document.getElementById('callCaption').innerHTML='<span style="opacity:.85">שלום! 👋</span>';document.getElementById('callYou').textContent='';
   callTutorTurn('[You are now on a friendly voice call with the learner. Greet them warmly in very simple Modern Hebrew and ask one easy question to start chatting. Keep it short.]',true);
 }
-function endCall(){callOn=false;stopMic();try{if(aiAudioEl)aiAudioEl.pause()}catch(e){}document.getElementById('callView').classList.remove('show')}
-function setOrb(state){const o=document.getElementById('callOrb');if(o)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'Listening…':state==='thinking'?'Thinking…':state==='speaking'?'Speaking…':'Tap the mic and talk'}
+function endCall(){callOn=false;stopMic();stopOrbAnim();try{if(aiAudioEl)aiAudioEl.pause()}catch(e){}document.getElementById('callView').classList.remove('show')}
+function setOrb(state){const o=document.getElementById('callOrb');if(o&&!o.dataset.viz)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'Listening…':state==='thinking'?'Thinking…':state==='speaking'?'Speaking…':'Tap the mic and talk'}
+let callAnalyser=null,callRAF=null;
+function animateOrb(){const o=document.getElementById('callOrb');if(!o||!callAnalyser)return;o.dataset.viz='1';o.className='orb speaking';const data=new Uint8Array(callAnalyser.frequencyBinCount);const step=function(){if(!callAnalyser){return}callAnalyser.getByteFrequencyData(data);let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];const avg=sum/data.length;const scale=1+Math.min(avg/130,0.55);o.style.transform='scale('+scale.toFixed(3)+')';callRAF=requestAnimationFrame(step)};step()}
+function stopOrbAnim(){if(callRAF){cancelAnimationFrame(callRAF);callRAF=null}callAnalyser=null;const o=document.getElementById('callOrb');if(o){delete o.dataset.viz;o.style.transform=''}}
+async function callSpeak(text,cb){
+  if(!text){if(cb)cb();return}
+  const url=await ttsUrl(text,false);
+  if(!url){deviceSpeak(text);if(cb)cb();return}
+  const ac=audioCtx();let src=null,an=null;
+  try{
+    stopAllAudio();const el=new Audio(url);aiAudioEl=el;
+    if(ac){if(ac.state==='suspended')ac.resume();src=ac.createMediaElementSource(el);an=ac.createAnalyser();an.fftSize=128;src.connect(an);an.connect(ac.destination);callAnalyser=an;animateOrb()}
+    const done=function(){stopOrbAnim();try{if(src)src.disconnect();if(an)an.disconnect()}catch(e){}if(cb)cb()};
+    el.onended=done;el.onerror=done;
+    const p=el.play();if(p&&p.catch)p.catch(function(){stopOrbAnim();deviceSpeak(text);done()});
+  }catch(e){stopOrbAnim();playUrl(url);if(cb)setTimeout(cb,1500)}
+}
 async function callTutorTurn(prime,isGreet){
   setOrb('thinking');
   const r=await getReply(isGreet?prime:null);
@@ -1303,7 +1321,7 @@ function renderCallReply(d){
   const tr=document.createElement('button');tr.className='call-end';tr.style.cssText='margin-top:12px;padding:6px 14px;font-size:13px';tr.textContent='🇬🇧 translation';tr.onclick=function(){en.style.display=en.style.display==='none'?'block':'none'};
   cap.appendChild(tr);cap.appendChild(en);
   setOrb('speaking');
-  speakThen(callLastHe,function(){if(callOn)setOrb('idle')});
+  callSpeak(callLastHe,function(){if(callOn)setOrb('idle')});
 }
 async function speakThen(text,cb){if(!text){if(cb)cb();return}const url=await ttsUrl(text,false);if(url)await playUrlAwait(url);else deviceSpeak(text);if(cb)cb()}
 function callUserSaid(text){document.getElementById('callYou').textContent='🗣️ '+text;history.push({role:'user',content:text});saveHistory();callTutorTurn(null,false)}
