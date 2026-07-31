@@ -28,7 +28,7 @@ It's a single self-contained web page: no install, no build step. Open it in a b
 - 🔤 **Vowels on/off** (nikud) and a difficulty dial - your choice, changeable any time.
 - 🏠 **Home screen** - your progress (words met, known, packs done) plus quick "carry on" buttons.
 - 💾 **Backup & restore** - save your progress to a file or a code (Settings), and restore it on any device.
-- ✨🔔🎵 **Animations, sound effects and music** - gentle feedback sounds and a confetti burst on wins, plus an optional background loop. All toggle on/off in Settings.
+- ✨🔔 **Animations and sound effects** - gentle feedback sounds and a confetti burst on wins. Both toggle on/off in Settings.
 
 ## Getting started
 

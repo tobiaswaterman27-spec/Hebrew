@@ -403,7 +403,6 @@
       <div class="setrow"><label>Sound &amp; animation</label>
         <div class="setflex"><span>Animations</span><div class="toggle" id="fxAnim"><button data-x="on" onclick="setFx('anim',true)">On</button><button data-x="off" onclick="setFx('anim',false)">Off</button></div></div>
         <div class="setflex"><span>Sound effects</span><div class="toggle" id="fxSfx"><button data-x="on" onclick="setFx('sfx',true)">On</button><button data-x="off" onclick="setFx('sfx',false)">Off</button></div></div>
-        <div class="setflex"><span>Music</span><div class="toggle" id="fxMusic"><button data-x="on" onclick="setFx('music',true)">On</button><button data-x="off" onclick="setFx('music',false)">Off</button></div></div>
       </div>
       <div class="setrow"><label>Back up your progress</label>
         <p class="muted" style="margin-bottom:8px">Your words and packs live on this device only. Save a backup so you never lose them, or move to another phone.</p>
@@ -449,7 +448,7 @@ let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',leve
 if(!settings.voice)settings.voice='auto';
 if(!settings.newWordTarget)settings.newWordTarget=5+Math.floor(Math.random()*6);
 if(settings.msgsSinceNew==null)settings.msgsSinceNew=0;
-if(!settings.fx)settings.fx={anim:true,sfx:true,music:false};
+if(!settings.fx)settings.fx={anim:true,sfx:true};
 if(!settings.packs)settings.packs={};
 let words=LS.get('yalla_words',[]);
 let dict=LS.get('yalla_dict',{});
@@ -1138,7 +1137,7 @@ function fillSettings(){
   document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
   document.getElementById('setLevel').value=settings.level;updateLvlLabel();
   document.getElementById('setName').value=settings.name||'';document.getElementById('setHeName').value=settings.heName||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
-  [['anim','fxAnim'],['sfx','fxSfx'],['music','fxMusic']].forEach(function(p){const box=document.getElementById(p[1]);if(box)box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.x==='on')===!!(settings.fx&&settings.fx[p[0]])))});
+  [['anim','fxAnim'],['sfx','fxSfx']].forEach(function(p){const box=document.getElementById(p[1]);if(box)box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.x==='on')===!!(settings.fx&&settings.fx[p[0]])))});
 }
 function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
 function setGender(g){settings.gender=g;saveSettings();fillSettings()}
@@ -1160,22 +1159,11 @@ function sfxWrong(){sfxSeq([[220,.16],[165,.22]],'sawtooth',.08)}
 function sfxComplete(){sfxSeq([[523,.12],[659,.12],[784,.12],[1047,.3]],'triangle',.13)}
 function sfxTap(){sfxSeq([[880,.05]],'sine',.05)}
 function sfxNudge(){sfxSeq([[587,.1],[784,.15]],'sine',.09)}
-let musicTimer=null,musicChord=0,musicNodes=null;
-// A gentle Am - F - C - G progression (pad), with an A-minor-pentatonic melody over it.
-const CHORDS=[[220.00,261.63,329.63],[174.61,220.00,261.63],[261.63,329.63,392.00],[196.00,246.94,293.66]];
-const PENTA=[440.00,523.25,587.33,659.25,783.99,880.00];
-function musicChain(){const ac=audioCtx();if(!musicNodes){const g=ac.createGain();g.gain.value=0.6;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1050;f.Q.value=0.4;g.connect(f);f.connect(ac.destination);musicNodes={gain:g,filter:f}}return musicNodes}
-function padNote(freq,dur){const ac=audioCtx();const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=freq;o.connect(g);g.connect(musicChain().gain);const t=ac.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.06,t+1.0);g.gain.setValueAtTime(0.06,t+dur-1.0);g.gain.linearRampToValueAtTime(0,t+dur);o.start(t);o.stop(t+dur+0.1)}
-function melodyNote(freq,at,dur){const ac=audioCtx();const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=freq;o.connect(g);g.connect(musicChain().gain);const t=ac.currentTime+at;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.045,t+0.06);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.05)}
-function musicTick(){const bar=4.2,chord=CHORDS[musicChord%CHORDS.length];chord.forEach(f=>padNote(f,bar));const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++){melodyNote(PENTA[Math.floor(Math.random()*PENTA.length)],0.3+Math.random()*3,1.3)}musicChord++}
-function startMusic(){if(musicTimer)return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();musicChord=0;musicTick();musicTimer=setInterval(musicTick,4200)}
-function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}if(musicNodes){try{musicNodes.gain.gain.linearRampToValueAtTime(0,audioCtx().currentTime+0.3)}catch(e){}setTimeout(function(){if(musicNodes){try{musicNodes.gain.gain.value=0.6}catch(e){}}},400)}}
-function applyMusic(){if(fxOn('music'))startMusic();else stopMusic()}
 function applyAnim(){const a=document.getElementById('app');if(a)a.classList.toggle('noanim',!fxOn('anim'))}
 function confetti(){if(!fxOn('anim'))return;const colors=['#0038b8','#ffffff','#8fb0ff','#ffd54a','#3f6fe0'];for(let i=0;i<44;i++){const d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=colors[i%colors.length];d.style.animation='fall '+(1.4+Math.random()*1.3)+'s linear forwards';document.body.appendChild(d);setTimeout(function(){d.remove()},2900)}}
-function unlockAudioOnce(){const ac=audioCtx();if(ac&&ac.state==='suspended')ac.resume();applyMusic()}
+function unlockAudioOnce(){const ac=audioCtx();if(ac&&ac.state==='suspended')ac.resume()}
 document.addEventListener('pointerdown',unlockAudioOnce,{once:true});
-function setFx(k,v){settings.fx[k]=v;saveSettings();fillSettings();if(k==='music')applyMusic();if(k==='anim')applyAnim();if(v&&k!=='music')sfxTap()}
+function setFx(k,v){settings.fx[k]=v;saveSettings();fillSettings();if(k==='anim')applyAnim();if(v)sfxTap()}
 
 /* ================= home ================= */
 function renderHome(){
@@ -1208,7 +1196,7 @@ function restoreFromFile(file){if(!file)return;const r=new FileReader();r.onload
 
 /* ================= boot ================= */
 function bootMain(){
-  buildKb();rebuildKnown();refreshCounters();fillSettings();applyAnim();applyMusic();
+  buildKb();rebuildKnown();refreshCounters();fillSettings();applyAnim();
   const alive=history.filter(h=>!h.hidden);
   if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
   const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
