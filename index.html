@@ -210,11 +210,11 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
   #callView{position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,#eaf1ff,#ffffff);color:var(--ink);display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:24px 18px 26px;max-width:680px;margin:0 auto}
   #callView.show{display:flex}
-  .call-top{font-size:14px;color:var(--muted);margin-top:8px;min-height:20px}
-  .orb-wrap{margin-top:10px}
-  .orb{width:150px;height:150px;border-radius:50%;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;font-size:56px}
+  .call-top{font-size:14px;color:var(--muted);margin-top:8px;min-height:22px;position:relative;z-index:2}
+  .orb-wrap{margin-top:34px}
+  .orb{width:132px;height:132px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:52px;transform-origin:center}
   .orb.idle{animation:orbIdle 3s ease-in-out infinite}
-  .orb.listening{background:#dbf5e4;animation:orbListen 1.1s ease-in-out infinite}
+  .orb.listening{background:#12855a;animation:orbListen 1.1s ease-in-out infinite}
   .orb.speaking{animation:orbGlow 1.2s ease-in-out infinite}
   .orb.thinking{animation:orbThinkPulse .9s ease-in-out infinite}
   @keyframes orbIdle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
@@ -860,7 +860,7 @@ async function generatePack(theme,level){
   const genId=theme.id+':'+level;
   if(genpacks[genId])return genpacks[genId];
   const avoid=words.map(w=>w.he).slice(-160).join(', ');
-  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Use British English spelling for meanings. Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
+  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Use British English spelling for meanings. Each transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe"). Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
   if(!d||!Array.isArray(d.words))return null;
   const ws=d.words.filter(w=>w&&w.he&&w.en).slice(0,16);
   if(!ws.length)return null;
@@ -968,6 +968,7 @@ ${nameLine}They can read Hebrew letters and want everyday spoken Israeli Hebrew.
 ${genderText()}
 ${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural. ':''}
 Difficulty ${settings.level}/5: ${levelText(settings.level)}
+${settings.level<=3?'TENSE: Use ONLY the present tense. Do NOT use past or future tense yet - never teach past/future in early conversations.':''}
 ${nk}
 
 SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet - no Arabic letters at all. Use BRITISH English spelling in all English text (e.g. colour, favourite, practise, realise).
@@ -976,7 +977,8 @@ MOST IMPORTANT RULE - keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
 - Reuse the words they ALREADY know as much as possible. New words should be RARE - only about one every 5 to 10 messages, NOT every message.
 - ${allowNew?'For THIS message you may introduce ONE new word if it truly helps - if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, do NOT introduce any new words. Use ONLY words the learner already knows. "new_words" must be empty ([]).'}
-- If they know few/no words, speak mostly in English and lean on their learned words.
+- If they know fewer than about 30 words, speak MOSTLY in English with only a little known Hebrew, and never pack more than one new Hebrew word into a sentence.
+- Every transliteration (reply_translit and new_words) must EXACTLY match the Hebrew as written, with the correct vowels and gender (e.g. יפה = "yafe" for a boy, "yafa" for a girl - do not mix them up). Be precise.
 - Keep every message very short (usually one short sentence).
 ${weak?'- Gently reuse these words they are still practising: '+weak+'.':''}
 
@@ -1061,9 +1063,12 @@ async function getReply(extra){
   let r=await callAI(extra);
   if(r.error)return r;
   const thresh=settings.level<=2?1:(settings.level===3?2:99);
-  if(countUnknown(r.data.reply_he||'')>thresh){
-    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said - just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Do not turn it into a bare "how are you". Same JSON format.]`);
-    if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))return r2;
+  let tries=0;
+  while(countUnknown(r.data.reply_he||'')>thresh&&tries<2){
+    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said - just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Present tense only. Do not turn it into a bare "how are you". Same JSON format.]`);
+    tries++;
+    if(r2.error)break;
+    if(countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))r=r2;
   }
   return r;
 }
@@ -1103,7 +1108,7 @@ async function lookupWord(word,context){
   if(dict[word]){openWord({he:word,translit:dict[word].translit,en:dict[word].en});return}
   openWord({he:word,translit:'…',en:'looking up…'});
   if(!getKey()){document.getElementById('mEn').textContent='Add your key in Settings to look up words.';return}
-  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. Reply JSON {"translit":"easy english letters","en":"short english meaning"}.',`Word: "${word}"  (from: "${context}")`,0);
+  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. The transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe"). Reply JSON {"translit":"easy english letters","en":"short english meaning"}.',`Word: "${word}"  (from: "${context}")`,0);
   if(d){dict[word]={translit:d.translit||'',en:d.en||''};saveDict();if(currentWord&&currentWord.he===word){currentWord={he:word,translit:d.translit,en:d.en};document.getElementById('mTl').textContent=d.translit||'';document.getElementById('mEn').textContent=d.en||''}}
   else document.getElementById('mEn').textContent='Could not look up right now.';
 }
@@ -1265,7 +1270,7 @@ async function transcribe(blob){
   const key=getKey();if(!key)return;
   if(micMode==='call')setOrb('thinking');else toast('Transcribing…');
   try{
-    const fd=new FormData();fd.append('file',blob,'speech.'+audioExt(blob.type));fd.append('model','whisper-1');
+    const fd=new FormData();fd.append('file',blob,'speech.'+audioExt(blob.type));fd.append('model','whisper-1');fd.append('language','he');fd.append('prompt','שיחה יומיומית בעברית פשוטה.');
     const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
     if(!res.ok){if(micMode==='call')setOrb('idle');toast('Transcribe failed ('+res.status+')'+(res.status===401?' - check your key':''));return}
     const data=await res.json();const text=(data.text||'').trim();
@@ -1286,12 +1291,12 @@ function startCall(){
 function endCall(){callOn=false;stopMic();stopOrbAnim();try{if(aiAudioEl)aiAudioEl.pause()}catch(e){}document.getElementById('callView').classList.remove('show')}
 function setOrb(state){const o=document.getElementById('callOrb');if(o&&!o.dataset.viz)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'🔴 Listening… tap ⏹ to stop':state==='thinking'?'Thinking…':state==='speaking'?'🗣️ Speaking…':'Tap the mic and talk'}
 let callAnalyser=null,callRAF=null;
-function animateOrb(cls){const o=document.getElementById('callOrb');if(!o||!callAnalyser)return;o.dataset.viz='1';o.className='orb '+(cls||'speaking');const data=new Uint8Array(callAnalyser.frequencyBinCount);const step=function(){if(!callAnalyser)return;callAnalyser.getByteFrequencyData(data);let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];const avg=sum/data.length;const scale=1+Math.min(avg/130,0.55);o.style.transform='scale('+scale.toFixed(3)+')';callRAF=requestAnimationFrame(step)};step()}
+function animateOrb(cls){const o=document.getElementById('callOrb');if(!o||!callAnalyser)return;o.dataset.viz='1';o.className='orb '+(cls||'speaking');const data=new Uint8Array(callAnalyser.frequencyBinCount);const step=function(){if(!callAnalyser)return;callAnalyser.getByteFrequencyData(data);let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];const avg=sum/data.length;const scale=1+Math.min(avg/210,0.32);o.style.transform='scale('+scale.toFixed(3)+')';callRAF=requestAnimationFrame(step)};step()}
 function callAgain(){if(callLastHe){setOrb('speaking');callSpeak(callLastHe,function(){if(callOn)setOrb('idle')})}}
 function stopOrbAnim(){if(callRAF){cancelAnimationFrame(callRAF);callRAF=null}callAnalyser=null;const o=document.getElementById('callOrb');if(o){delete o.dataset.viz;o.style.transform=''}}
-async function callSpeak(text,cb){
+async function callSpeak(text,cb,slow){
   if(!text){if(cb)cb();return}
-  const url=await ttsUrl(text,false);
+  const url=await ttsUrl(text,!!slow);
   if(!url){deviceSpeak(text);if(cb)cb();return}
   const ac=audioCtx();let src=null,an=null;
   try{
@@ -1326,7 +1331,7 @@ function renderCallReply(d){
 }
 async function speakThen(text,cb){if(!text){if(cb)cb();return}const url=await ttsUrl(text,false);if(url)await playUrlAwait(url);else deviceSpeak(text);if(cb)cb()}
 function callUserSaid(text){document.getElementById('callYou').textContent='🗣️ '+text;history.push({role:'user',content:text});saveHistory();callTutorTurn(null,false)}
-function callSlower(){if(callLastHe)speak(callLastHe,true)}
+function callSlower(){if(callLastHe){setOrb('speaking');callSpeak(callLastHe,function(){if(callOn)setOrb('idle')},true)}}
 async function callHelp(){const kn=knownList();setOrb('thinking');const d=await simpleAI(`The learner is on a Hebrew voice call and is stuck. Suggest ONE short, natural thing they could say next in Hebrew using ONLY words they know: ${kn.length?kn.join('; '):'(very few - keep to 1-2 basic words)'}. Use British English spelling. Reply JSON {"he":"","translit":"","en":""}.`,'help',0.4);if(callOn)setOrb('idle');if(d&&d.he)document.getElementById('callYou').innerHTML='💡 Try: <b class="hetext">'+esc(d.he)+'</b> <span style="opacity:.8">('+esc(d.en||'')+')</span>'}
 
 /* ================= boot ================= */
