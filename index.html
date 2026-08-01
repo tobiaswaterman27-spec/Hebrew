@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="color-scheme" content="light only">
+<meta name="color-scheme" content="light">
 <meta name="theme-color" content="#0038b8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -11,14 +11,14 @@
 
 <style>
   :root{
-    color-scheme:light only;
+    color-scheme:only light;
     --blue:#0038b8; --blue-soft:#e8eeff; --blue-mid:#c9d8ff;
     --ink:#0e1730; --muted:#5b6580; --white:#fff; --bg:#f6f8ff; --line:#dbe3f5;
     --good:#12855a; --warn:#b8860b; --warn-bg:#fff6df; --radius:16px;
     --shadow:0 6px 20px rgba(0,56,184,.10);
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;height:100%}
+  html,body{margin:0;padding:0;height:100%;background:#f6f8ff}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
   #app{max-width:680px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative}
   .he{direction:rtl;unicode-bidi:isolate;font-family:"SBL Hebrew","Times New Roman",serif}
@@ -445,7 +445,7 @@
 
   <nav>
     <button class="on" data-tab="home" onclick="go('home')"><span class="ic">🏠</span>Home</button>
-    <button data-tab="chat" onclick="go('chat')"><span class="ic">💬</span>Chat</button>
+    <button data-tab="chat" onclick="goChat()"><span class="ic">💬</span>Chat</button>
     <button data-tab="learn" onclick="go('learn')"><span class="ic">📖</span>Learn</button>
     <button data-tab="scn" onclick="go('scn')"><span class="ic">🎭</span>Scenes</button>
     <button data-tab="words" onclick="go('words')"><span class="ic">📚</span>Words</button>
@@ -631,7 +631,6 @@ function go(tab){
   document.getElementById(map[tab]).classList.add('on');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===(tab==='stories'||tab==='pack'||tab==='practice'?'learn':tab)));
   if(tab==='home')renderHome();
-  if(tab==='chat')ensureChatStarted();
   if(tab==='words')renderWords();
   if(tab==='scn')renderScenarios();
   if(tab==='learn')renderLearn();
@@ -1227,7 +1226,7 @@ function renderHome(){
   let h=`<div class="home-hi">${nm?('שלום, '+esc(nm)+'! 👋'):'שלום! 👋'}</div><div class="home-sub">Yalla - let's learn some Hebrew.</div>`;
   h+=`<div class="home-grid"><div class="box"><div class="n">${known}</div><div class="l">words met</div></div><div class="box"><div class="n">${mastered}</div><div class="l">known</div></div><div class="box"><div class="n">${packsDone}</div><div class="l">packs done</div></div></div>`;
   h+=`<button class="home-cta" onclick="startCall()"><span class="emo">📞</span><span class="lbl"><b>Call your tutor</b><span class="s">Speak out loud, hands-free</span></span><span>→</span></button>`;
-  h+=`<button class="home-cta alt" onclick="go('chat')"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
+  h+=`<button class="home-cta alt" onclick="goChat()"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
   if(next)h+=`<button class="home-cta alt" onclick="homeNext()"><span class="emo">${next.kind==='pack'?next.p.emo:next.t.emo}</span><span class="lbl"><b>Learn: ${esc(next.kind==='pack'?next.p.title:next.t.title)}</b><span class="s">Your next pack</span></span><span>→</span></button>`;
   if(due>0)h+=`<button class="home-cta alt" onclick="startReview()"><span class="emo">📚</span><span class="lbl"><b>Review ${due} word${due===1?'':'s'}</b><span class="s">Keep them fresh</span></span><span>→</span></button>`;
   h+=`<button class="home-cta alt" onclick="go('stories')"><span class="emo">📖</span><span class="lbl"><b>Read a story</b><span class="s">At your level</span></span><span>→</span></button>`;
@@ -1236,6 +1235,7 @@ function renderHome(){
 }
 function homeNext(){const it=nextUnfinished();if(!it)return;it.kind==='pack'?openPack(it.p):openThemeLevel(it.t)}
 function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(getKey())greet();else showNoKey()}
+function goChat(){go('chat');ensureChatStarted()}
 
 /* ================= backup & restore ================= */
 const BK_KEYS=['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks'];
