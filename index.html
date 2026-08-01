@@ -1,5 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light only">
 <meta name="theme-color" content="#0038b8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -10,6 +11,7 @@
 
 <style>
   :root{
+    color-scheme:light only;
     --blue:#0038b8; --blue-soft:#e8eeff; --blue-mid:#c9d8ff;
     --ink:#0e1730; --muted:#5b6580; --white:#fff; --bg:#f6f8ff; --line:#dbe3f5;
     --good:#12855a; --warn:#b8860b; --warn-bg:#fff6df; --radius:16px;
@@ -484,7 +486,7 @@
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
 let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',heName:'',hobbies:'',tipShown:false,packs:{},voice:'auto',msgsSinceNew:0,newWordTarget:6});
 if(!settings.voice)settings.voice='auto';
-if(!settings.newWordTarget)settings.newWordTarget=5+Math.floor(Math.random()*6);
+if(!settings.newWordTarget)settings.newWordTarget=5;
 if(settings.msgsSinceNew==null)settings.msgsSinceNew=0;
 if(!settings.fx)settings.fx={anim:true,sfx:true};
 if(!settings.packs)settings.packs={};
@@ -977,7 +979,7 @@ SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain
 MOST IMPORTANT RULE - keep it understandable:
 - The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
 - Reuse the words they ALREADY know as much as possible. New words should be RARE - only about one every 5 to 10 messages, NOT every message.
-- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps - if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, do NOT introduce any new words. Use ONLY words the learner already knows. "new_words" must be empty ([]).'}
+- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps - if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, introduce NO new words. Use ONLY Hebrew words the learner already knows - for ANYTHING else (question words like "how"/"what", etc.) use ENGLISH, not new Hebrew. "new_words" must be empty ([]). This includes the very first greeting.'}
 - If they know fewer than about 30 words, speak MOSTLY in English with only a little known Hebrew, and never pack more than one new Hebrew word into a sentence.
 - Every transliteration (reply_translit and new_words) must EXACTLY match the Hebrew as written, with the correct vowels and gender (e.g. יפה = "yafe" for a boy, "yafa" for a girl - do not mix them up). Be precise.
 - Keep every message very short (usually one short sentence).
@@ -1062,22 +1064,22 @@ function addSpotlight(w){const s=document.createElement('div');s.className='spot
 function typingOn(){const t=document.createElement('div');t.className='typing';t.id='typing';t.innerHTML='<span>●</span><span>●</span><span>●</span>';chatScroll().appendChild(t);scrollDown()}
 function typingOff(){const t=document.getElementById('typing');if(t)t.remove()}
 
+function allowNewNow(){return (settings.msgsSinceNew||0)>=(settings.newWordTarget||5)}
 async function getReply(extra){
   let r=await callAI(extra);
   if(r.error)return r;
-  const thresh=settings.level<=2?1:(settings.level===3?2:99);
-  let tries=0;
-  while(countUnknown(r.data.reply_he||'')>thresh&&tries<2){
-    const r2=await callAI(`[Your last reply had too many unfamiliar HEBREW words. Keep your warm tone, your English, and your reaction to what they said - just reduce the Hebrew to ONLY words they know (${knownList().join('; ')||'(almost none yet)'}) plus AT MOST one new Hebrew word (put it in new_words). Present tense only. Do not turn it into a bare "how are you". Same JSON format.]`);
-    tries++;
-    if(r2.error)break;
-    if(countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))r=r2;
+  const strict=settings.level<=3;
+  const allow=allowNewNow();
+  const thresh=!strict?99:(allow?1:0);
+  if(countUnknown(r.data.reply_he||'')>thresh){
+    const r2=await callAI(`[Too many Hebrew words the learner does not know. They know ONLY: ${knownList().join('; ')||'(almost none yet)'}. Rewrite using ONLY those Hebrew words${thresh>0?' plus AT MOST one new word (put it in new_words)':' and NO new Hebrew words at all'}; put everything else in ENGLISH. Present tense only. Keep your warm reaction - do not make it a bare "how are you". Same JSON format.]`);
+    if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))r=r2;
   }
   return r;
 }
 function updateNewWordCounter(d){
   const introduced=Array.isArray(d.new_words)&&d.new_words.some(w=>w&&w.he);
-  if(introduced){settings.msgsSinceNew=0;settings.newWordTarget=5+Math.floor(Math.random()*6)}
+  if(introduced){settings.msgsSinceNew=0;settings.newWordTarget=5}
   else{settings.msgsSinceNew=(settings.msgsSinceNew||0)+1}
   saveSettings();
 }
@@ -1105,7 +1107,7 @@ let aiBusy=false,greetPending=false;
 async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(aiBusy)return;if(!getKey()){showNoKey();return}aiBusy=true;inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);aiBusy=false;return}history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack();aiBusy=false}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem - check your connection and try again.';if(r.error==='http')m='OpenAI error - check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
-function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`).then(function(){greetPending=false})}
+function greet(){if(greetPending)return;if(!getKey()){showNoKey();return}greetPending=true;const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly. Use ONLY Hebrew words they already know plus ENGLISH - introduce NO new Hebrew words, not even question words. Keep it tiny and friendly.${nm}${hint}]`).then(function(){greetPending=false})}
 
 /* ================= tap lookup ================= */
 async function lookupWord(word,context){
@@ -1233,7 +1235,7 @@ function renderHome(){
   el.innerHTML=h;
 }
 function homeNext(){const it=nextUnfinished();if(!it)return;it.kind==='pack'?openPack(it.p):openThemeLevel(it.t)}
-function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(greetPending)return;if(getKey()){greetPending=true;greet()}else showNoKey()}
+function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(getKey())greet();else showNoKey()}
 
 /* ================= backup & restore ================= */
 const BK_KEYS=['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks'];
