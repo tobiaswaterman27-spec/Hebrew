@@ -648,7 +648,7 @@ function openWord(w){
   document.getElementById('verbArea').innerHTML='';
   document.getElementById('mVerbBtn').style.display='';
   document.getElementById('modal').classList.add('show');
-  speak(w.he);
+  speak(w.voiced||w.he);
 }
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 function saveCurrentWord(){if(currentWord){addWord(currentWord);toast('Saved to your words');document.getElementById('mSaveBtn').textContent='✓ Saved'}}
@@ -682,8 +682,8 @@ function speak(text,slow){if(!text)return;speakAI(text,slow)}
 async function playStory(){
   const sents=(currentStory&&currentStory.sentences)||[];
   for(let i=0;i<sents.length;i++){
-    const url=await ttsUrl(sents[i].he,true);
-    if(url)await playUrlAwait(url);else deviceSpeak(sents[i].he);
+    const url=await ttsUrl(sents[i].voiced||sents[i].he,true);
+    if(url)await playUrlAwait(url);else deviceSpeak(sents[i].voiced||sents[i].he);
     if(i<sents.length-1)await sleep(700);
   }
 }
@@ -700,6 +700,7 @@ function addWord(w,known){
   else{const box=known?2:0;words.push({he:w.he,translit:w.translit||'',en:w.en||'',box:box,seen:0,added:Date.now(),next:Date.now()+INTERVALS[box]*86400000})}
   saveWords();
 }
+function cacheWord(w){if(!w||!w.he)return;if(nameSet.has(normHe(w.he)))return;dict[w.he]={translit:w.translit||'',en:w.en||''};saveDict()}
 function knownList(){return words.map(w=>w.he+' ('+w.en+')')}
 function refreshCounters(){
   const known=words.filter(w=>w.box>=2).length,due=words.filter(w=>w.next<=Date.now()).length;
@@ -890,7 +891,7 @@ async function openThemeLevel(theme){
 let currentStory=null;
 async function storyCall(list,stricter){
   const vocab=list.length?list.join('; '):'(the learner knows very few words yet)';
-  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. Proper names (people/places) are NOT vocabulary - list any you use in "names" and never put a name in new_words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","en":"natural english","literal":"word-for-word literal english"}],"names":[],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
+  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. Proper names (people/places) are NOT vocabulary - list any you use in "names" and never put a name in new_words. Each sentence also needs "voiced": exactly the same Hebrew as "he" but WITH full nikud (including sin/shin dots) for correct pronunciation - it is used only for the voice, never shown. ${settings.nikud?'The "he" text should have nikud too.':'The "he" text has NO nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","voiced":"","en":"natural english","literal":"word-for-word literal english"}],"names":[],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
 }
 async function newStory(){
   if(!getKey()){toast('Add your OpenAI key in Settings first');return}
@@ -904,7 +905,7 @@ async function newStory(){
   btn.disabled=false;btn.textContent='✨ Another story';
   if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
   addNames(d.names);currentStory=d;renderStory(d);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)addWord(w)});
+  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)cacheWord(w)});
 }
 function renderStory(d){
   const area=document.getElementById('storyArea');area.innerHTML='';
@@ -916,7 +917,7 @@ function renderStory(d){
     const p=document.createElement('div');p.style.cssText='margin:12px 0 0;padding-bottom:11px;border-bottom:1px solid var(--line)';
     const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
     const row=document.createElement('div');row.className='brow';
-    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.he,true);
+    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.voiced||s.he,true);
     const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.innerHTML=esc(s.en||'')+(s.literal?`<div style="margin-top:3px">📝 Literal: ${esc(s.literal)}</div>`:'');
     const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
     row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
@@ -1005,9 +1006,10 @@ PUNCTUATION: Never use em dashes or en dashes ("-" or "-") anywhere. Use commas,
 
 "reply_literal" = a word-for-word LITERAL English translation of your Hebrew (it may sound clunky in English - that is the point, it shows how the Hebrew is built).
 "names" = list any proper names (people or places) that appear in your reply_he. Names are NOT vocabulary: NEVER put a proper name in new_words.
+"reply_he_voiced" = EXACTLY the same words as reply_he but WITH full nikud (vowel points), including the correct sin/shin dot, so a text-to-speech voice pronounces it correctly (e.g. שמח becomes שָׂמֵחַ = "sameach", not "shameach"). This is used ONLY for the voice and is never shown on screen.
 
 Reply with ONE JSON object only (no markdown) with EXACTLY these keys:
-{"reply_he":"","reply_translit":"","reply_en":"","reply_literal":"","names":[],"new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
+{"reply_he":"","reply_he_voiced":"","reply_translit":"","reply_en":"","reply_literal":"","names":[],"new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
 }
 
 /* ================= OpenAI ================= */
@@ -1043,7 +1045,8 @@ function addAI(d,replay){
   const b=document.createElement('div');b.className='bubble ai';
   const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,shown);b.appendChild(t);
   const row=document.createElement('div');row.className='brow';
-  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(heText);
+  const voiced=(d.reply_he_voiced||'').trim()||heText;
+  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(voiced);
   const hp=document.createElement('button');hp.className='icon-btn';hp.textContent='🇬🇧 translation';
   const help=document.createElement('div');help.className='help-line';help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`+(d.reply_literal?`<div style="margin-top:5px">📝 Literal: ${esc(d.reply_literal)}</div>`:'');
   hp.onclick=()=>help.classList.toggle('show');row.appendChild(sp);row.appendChild(hp);b.appendChild(row);b.appendChild(help);
@@ -1051,7 +1054,7 @@ function addAI(d,replay){
   if(d.grammar_tip&&d.grammar_tip.show&&d.grammar_tip.point_en){const g=document.createElement('div');g.className='grammar';g.innerHTML=`<b>🔤 Tip:</b> ${esc(d.grammar_tip.point_en)}`+(d.grammar_tip.example_he?`<div class="ex">${esc(d.grammar_tip.example_he)}</div>`:'')+(d.grammar_tip.example_en?`<div class="muted">${esc(d.grammar_tip.example_en)}</div>`:'');b.appendChild(g);if(!replay&&!grammar.some(x=>x.point_en===d.grammar_tip.point_en)){grammar.push({point_en:d.grammar_tip.point_en,example_he:d.grammar_tip.example_he||'',example_en:d.grammar_tip.example_en||''});saveGrammar()}}
   if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
   chatScroll().appendChild(b);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)addWord(w);addSpotlight(w)}});
+  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)cacheWord(w);addSpotlight(w)}});
   if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null;sfxComplete();confetti()}
   scrollDown();
 }
@@ -1098,18 +1101,19 @@ function addPackNudge(item){
   chatScroll().appendChild(el);scrollDown();
 }
 async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(!getKey()){showNoKey();return}inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);return}history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack()}
+let aiBusy=false,greetPending=false;
+async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(aiBusy)return;if(!getKey()){showNoKey();return}aiBusy=true;inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);aiBusy=false;return}history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack();aiBusy=false}
 function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem - check your connection and try again.';if(r.error==='http')m='OpenAI error - check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
 function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
-function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`)}
+function greet(){if(!getKey()){showNoKey();return}const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly in very simple Modern Hebrew (with English help) and ask one tiny easy question to start.${nm}${hint}]`).then(function(){greetPending=false})}
 
 /* ================= tap lookup ================= */
 async function lookupWord(word,context){
-  if(dict[word]){openWord({he:word,translit:dict[word].translit,en:dict[word].en});return}
+  if(dict[word]){openWord({he:word,translit:dict[word].translit,en:dict[word].en,voiced:dict[word].voiced});return}
   openWord({he:word,translit:'…',en:'looking up…'});
   if(!getKey()){document.getElementById('mEn').textContent='Add your key in Settings to look up words.';return}
-  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. The transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe"). Reply JSON {"translit":"easy english letters","en":"short english meaning"}.',`Word: "${word}"  (from: "${context}")`,0);
-  if(d){dict[word]={translit:d.translit||'',en:d.en||''};saveDict();if(currentWord&&currentWord.he===word){currentWord={he:word,translit:d.translit,en:d.en};document.getElementById('mTl').textContent=d.translit||'';document.getElementById('mEn').textContent=d.en||''}}
+  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. The transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe", שמח = "sameach"). Also give "voiced": the word with full nikud (incl. sin/shin dot) for pronunciation. Reply JSON {"translit":"easy english letters","en":"short english meaning","voiced":"word with nikud"}.',`Word: "${word}"  (from: "${context}")`,0);
+  if(d){dict[word]={translit:d.translit||'',en:d.en||'',voiced:d.voiced||''};saveDict();if(currentWord&&currentWord.he===word){currentWord={he:word,translit:d.translit,en:d.en,voiced:d.voiced};document.getElementById('mTl').textContent=d.translit||'';document.getElementById('mEn').textContent=d.en||''}}
   else document.getElementById('mEn').textContent='Could not look up right now.';
 }
 
@@ -1229,7 +1233,7 @@ function renderHome(){
   el.innerHTML=h;
 }
 function homeNext(){const it=nextUnfinished();if(!it)return;it.kind==='pack'?openPack(it.p):openThemeLevel(it.t)}
-function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(getKey())greet();else showNoKey()}
+function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(greetPending)return;if(getKey()){greetPending=true;greet()}else showNoKey()}
 
 /* ================= backup & restore ================= */
 const BK_KEYS=['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks'];
@@ -1281,7 +1285,7 @@ async function transcribe(blob){
 }
 
 /* ================= call / speaking mode ================= */
-let callOn=false,callLastHe='';
+let callOn=false,callLastHe='',callVoiced='';
 function startCall(){
   if(!getKey()){toast('Add your OpenAI key in Settings first');go('set');return}
   callOn=true;document.getElementById('callView').classList.add('show');
@@ -1292,7 +1296,7 @@ function endCall(){callOn=false;stopMic();stopOrbAnim();try{if(aiAudioEl)aiAudio
 function setOrb(state){const o=document.getElementById('callOrb');if(o&&!o.dataset.viz)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'🔴 Listening… tap ⏹ to stop':state==='thinking'?'Thinking…':state==='speaking'?'🗣️ Speaking…':'Tap the mic and talk'}
 let callAnalyser=null,callRAF=null;
 function animateOrb(cls){const o=document.getElementById('callOrb');if(!o||!callAnalyser)return;o.dataset.viz='1';o.className='orb '+(cls||'speaking');const data=new Uint8Array(callAnalyser.frequencyBinCount);const step=function(){if(!callAnalyser)return;callAnalyser.getByteFrequencyData(data);let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];const avg=sum/data.length;const scale=1+Math.min(avg/210,0.32);o.style.transform='scale('+scale.toFixed(3)+')';callRAF=requestAnimationFrame(step)};step()}
-function callAgain(){if(callLastHe){setOrb('speaking');callSpeak(callLastHe,function(){if(callOn)setOrb('idle')})}}
+function callAgain(){if(callVoiced){setOrb('speaking');callSpeak(callVoiced,function(){if(callOn)setOrb('idle')})}}
 function stopOrbAnim(){if(callRAF){cancelAnimationFrame(callRAF);callRAF=null}callAnalyser=null;const o=document.getElementById('callOrb');if(o){delete o.dataset.viz;o.style.transform=''}}
 async function callSpeak(text,cb,slow){
   if(!text){if(cb)cb();return}
@@ -1319,19 +1323,20 @@ async function callTutorTurn(prime,isGreet){
 }
 function renderCallReply(d){
   addNames(d.names);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)addWord(w)});
+  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)cacheWord(w)});
   callLastHe=(d.reply_he||'').trim();
+  callVoiced=(d.reply_he_voiced||'').trim()||callLastHe;
   const cap=document.getElementById('callCaption');cap.innerHTML='';
   const he=document.createElement('div');he.className='hetext';renderHebrewInto(he,callLastHe||d.reply_en||'…');cap.appendChild(he);
   const en=document.createElement('div');en.style.cssText='display:none;margin-top:8px;color:var(--muted);direction:ltr';en.innerHTML=esc(d.reply_en||'')+(d.reply_literal?'<div style="margin-top:3px">📝 '+esc(d.reply_literal)+'</div>':'');
   const tr=document.createElement('button');tr.className='call-end';tr.style.cssText='margin-top:12px;padding:6px 14px;font-size:13px';tr.textContent='🇬🇧 translation';tr.onclick=function(){en.style.display=en.style.display==='none'?'block':'none'};
   cap.appendChild(tr);cap.appendChild(en);
   setOrb('speaking');
-  callSpeak(callLastHe,function(){if(callOn)setOrb('idle')});
+  callSpeak(callVoiced,function(){if(callOn)setOrb('idle')});
 }
 async function speakThen(text,cb){if(!text){if(cb)cb();return}const url=await ttsUrl(text,false);if(url)await playUrlAwait(url);else deviceSpeak(text);if(cb)cb()}
 function callUserSaid(text){document.getElementById('callYou').textContent='🗣️ '+text;history.push({role:'user',content:text});saveHistory();callTutorTurn(null,false)}
-function callSlower(){if(callLastHe){setOrb('speaking');callSpeak(callLastHe,function(){if(callOn)setOrb('idle')},true)}}
+function callSlower(){if(callVoiced){setOrb('speaking');callSpeak(callVoiced,function(){if(callOn)setOrb('idle')},true)}}
 async function callHelp(){const kn=knownList();setOrb('thinking');const d=await simpleAI(`The learner is on a Hebrew voice call and is stuck. Suggest ONE short, natural thing they could say next in Hebrew using ONLY words they know: ${kn.length?kn.join('; '):'(very few - keep to 1-2 basic words)'}. Use British English spelling. Reply JSON {"he":"","translit":"","en":""}.`,'help',0.4);if(callOn)setOrb('idle');if(d&&d.he)document.getElementById('callYou').innerHTML='💡 Try: <b class="hetext">'+esc(d.he)+'</b> <span style="opacity:.8">('+esc(d.en||'')+')</span>'}
 
 /* ================= boot ================= */
