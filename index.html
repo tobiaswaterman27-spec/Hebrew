@@ -500,6 +500,7 @@ function saveWords(){LS.set('yalla_words',words);rebuildKnown();refreshCounters(
 /* known-word detection (client-side, so difficulty doesn't depend on the AI) */
 let knownSet=new Set(),masteredSet=new Set();
 function normHe(w){return String(w).replace(/[֑-ׇ]/g,'').replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'').trim()}
+function stripNikud(s){return String(s).replace(/[֑-ׇ]/g,'')}
 function rebuildKnown(){
   knownSet=new Set();masteredSet=new Set();
   words.forEach(w=>{
@@ -1037,7 +1038,7 @@ async function simpleAI(sys,user,temp){
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 const chatScroll=()=>document.getElementById('chatScroll');
 function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+((!isKnownWord(p)&&!nameSet.has(normHe(p)))?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
+function renderHebrewInto(el,text){el.innerHTML='';if(!settings.nikud)text=stripNikud(text);String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+((!isKnownWord(p)&&!nameSet.has(normHe(p)))?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
 function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
 function addAI(d,replay){
   addNames(d.names);
@@ -1222,7 +1223,7 @@ function renderHome(){
   const known=words.length,mastered=words.filter(w=>w.box>=2).length;
   const packsDone=allItems().filter(itemDone).length;
   const due=words.filter(w=>w.next<=Date.now()).length;
-  const next=nextUnfinished(),nm=settings.heName||settings.name;
+  const next=nextUnfinished(),nm=settings.heName?(settings.nikud?settings.heName:stripNikud(settings.heName)):settings.name;
   let h=`<div class="home-hi">${nm?('שלום, '+esc(nm)+'! 👋'):'שלום! 👋'}</div><div class="home-sub">Yalla - let's learn some Hebrew.</div>`;
   h+=`<div class="home-grid"><div class="box"><div class="n">${known}</div><div class="l">words met</div></div><div class="box"><div class="n">${mastered}</div><div class="l">known</div></div><div class="box"><div class="n">${packsDone}</div><div class="l">packs done</div></div></div>`;
   h+=`<button class="home-cta" onclick="startCall()"><span class="emo">📞</span><span class="lbl"><b>Call your tutor</b><span class="s">Speak out loud, hands-free</span></span><span>→</span></button>`;
