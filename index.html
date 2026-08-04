@@ -1,1358 +1,619 @@
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="color-scheme" content="light">
-<meta name="theme-color" content="#0038b8">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Yalla">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
-<title>Yalla - Learn Hebrew by Chatting</title>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0d1b2a" />
+<title>Sababa · Learn spoken Hebrew</title>
+<link rel="icon" href="icon.svg" />
 <style>
   :root{
-    color-scheme:only light;
-    --blue:#0038b8; --blue-soft:#e8eeff; --blue-mid:#c9d8ff;
-    --ink:#0e1730; --muted:#5b6580; --white:#fff; --bg:#f6f8ff; --line:#dbe3f5;
-    --good:#12855a; --warn:#b8860b; --warn-bg:#fff6df; --radius:16px;
-    --shadow:0 6px 20px rgba(0,56,184,.10);
+    --bg:#0d1b2a;
+    --bg-2:#122438;
+    --panel:#16283d;
+    --panel-2:#1d3350;
+    --line:#25405f;
+    --text:#eaf2fb;
+    --muted:#9fb4cc;
+    --accent:#4cc9f0;
+    --accent-2:#4361ee;
+    --gold:#f4c95d;
+    --good:#3ddc97;
+    --bad:#ff6b6b;
+    --radius:18px;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --heb: "SBL Hebrew","Times New Roman","Arial Hebrew","David", var(--font);
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;height:100%;background:#f6f8ff;background-image:linear-gradient(#f6f8ff,#f6f8ff)}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-  #app{max-width:680px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;background:var(--bg);position:relative}
-  .he{direction:rtl;unicode-bidi:isolate;font-family:"SBL Hebrew","Times New Roman",serif}
-  .hetext{direction:rtl;unicode-bidi:plaintext}
-  button{font-family:inherit;cursor:pointer}
-  .btn{background:var(--blue);color:#fff;border:none;border-radius:12px;padding:14px 18px;font-size:16px;font-weight:600;width:100%}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--font);
+    background:radial-gradient(1200px 800px at 70% -10%, #1b3a5b 0%, var(--bg) 55%);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  #app{height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;position:relative}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .heb{font-family:var(--heb);direction:rtl;unicode-bidi:isolate}
+  .muted{color:var(--muted)}
+  .center{display:flex;align-items:center;justify-content:center}
+
+  /* ---------- Screens ---------- */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;
+    padding:22px;opacity:0;pointer-events:none;transform:translateY(8px);
+    transition:opacity .28s ease, transform .28s ease}
+  .screen.active{opacity:1;pointer-events:auto;transform:none}
+
+  /* ---------- Onboarding ---------- */
+  .brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;margin-top:8vh}
+  .logo{font-size:64px;line-height:1}
+  .brand h1{font-size:40px;margin:6px 0 0;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--accent),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .heb-name{font-family:var(--heb);font-size:26px;color:var(--gold)}
+  .brand p{color:var(--muted);max-width:340px;margin:10px auto 0;line-height:1.5}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--shadow)}
+  .field{margin:16px 0}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:.3px}
+  input[type=password],input[type=text]{width:100%;background:var(--bg-2);border:1px solid var(--line);
+    color:var(--text);padding:14px 14px;border-radius:12px;font-size:16px;outline:none}
+  input:focus{border-color:var(--accent)}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:80px;background:var(--bg-2);border:1px solid var(--line);
+    padding:12px 10px;border-radius:12px;font-size:14px;color:var(--muted);transition:.15s}
+  .seg button.on{background:var(--accent-2);border-color:var(--accent);color:#fff;font-weight:700}
+  .btn{display:block;width:100%;padding:16px;border-radius:14px;font-size:17px;font-weight:700;
+    background:linear-gradient(90deg,var(--accent-2),var(--accent));color:#04121f;box-shadow:var(--shadow);
+    transition:transform .1s ease, filter .15s}
   .btn:active{transform:translateY(1px)}
-  .btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--blue-mid)}
-  .btn.small{width:auto;padding:9px 14px;font-size:14px;border-radius:10px}
-  .btn.sec{background:var(--blue-soft);color:var(--blue)}
-  input,textarea,select{font-family:inherit;font-size:16px;width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
-  input:focus,textarea:focus{outline:none;border-color:var(--blue)}
-  label{font-weight:600;font-size:14px;display:block;margin:0 0 6px}
-  .muted{color:var(--muted);font-size:14px;line-height:1.5}
-  .hidden{display:none !important}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);box-shadow:none;font-weight:600}
+  .btn:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
+  .tiny{font-size:12px;color:var(--muted);line-height:1.5}
+  a{color:var(--accent)}
 
-  #onboard{position:absolute;inset:0;background:#fff;z-index:50;overflow-y:auto}
-  .ob-wrap{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;gap:18px}
-  .brand{font-size:52px;font-weight:800;color:var(--blue);letter-spacing:-1px;line-height:1}
-  .brand-he{font-size:40px;color:var(--ink);margin-top:6px}
-  .flag{font-size:30px}
-  .ob-step{display:none;flex-direction:column;gap:16px}
-  .ob-step.active{display:flex}
-  .choice{display:flex;flex-direction:column;gap:12px}
-  .choice button{text-align:right;background:#fff;border:2px solid var(--line);border-radius:14px;padding:16px;font-size:16px;color:var(--ink);display:flex;justify-content:space-between;align-items:center}
-  .choice button.on{border-color:var(--blue);background:var(--blue-soft)}
-  .choice .sub{display:block;font-size:13px;color:var(--muted);margin-top:3px;font-weight:400}
-  .dotrow{display:flex;gap:7px;justify-content:center;margin-top:6px}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--blue-mid)}
-  .dot.on{background:var(--blue)}
-  .keyhelp{background:var(--blue-soft);border-radius:12px;padding:13px;font-size:13px;color:var(--muted);line-height:1.5}
+  /* ---------- Home ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+    border-bottom:1px solid var(--line);flex:0 0 auto}
+  .topbar .title{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+  .topbar .title .dot{font-size:24px}
+  .iconbtn{width:42px;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .home-scroll{flex:1;overflow-y:auto;padding:20px}
+  .hi{font-size:15px;color:var(--muted);margin:0 0 4px}
+  .hi b{color:var(--text)}
+  .section-h{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);
+    margin:22px 4px 12px;font-weight:700}
+  .scenarios{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;
+    text-align:left;position:relative;overflow:hidden;transition:.15s;min-height:130px;
+    display:flex;flex-direction:column;justify-content:space-between}
+  .sc:active{transform:scale(.98)}
+  .sc .emoji{font-size:34px}
+  .sc h3{margin:10px 0 2px;font-size:16px}
+  .sc .sub{font-size:12px;color:var(--muted);line-height:1.4}
+  .sc .done{position:absolute;top:10px;right:10px;background:var(--good);color:#04121f;
+    font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px}
 
-  header{background:var(--blue);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between}
-  header .t{font-size:20px;font-weight:800;letter-spacing:-.5px}
-  header .t small{font-weight:600;opacity:.85;font-size:13px;margin-left:6px}
-  header .known{background:rgba(255,255,255,.18);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600}
-  nav{display:flex;background:#fff;border-top:1px solid var(--line)}
-  nav button{flex:1;background:none;border:none;padding:9px 0 11px;color:var(--muted);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px}
-  nav button .ic{font-size:20px}
-  nav button.on{color:var(--blue)}
-  main{flex:1;overflow-y:auto;position:relative}
-  .page{display:none;padding:16px;min-height:100%}
-  .page.on{display:block}
-
-  #chatPage{display:none;flex-direction:column;height:100%}
-  #chatPage.on{display:flex}
-  .mission{background:var(--warn-bg);border:1px solid #f0dfa8;border-radius:12px;padding:10px 13px;margin:12px 12px 0;font-size:14px;display:flex;gap:8px;align-items:flex-start}
-  .mission b{color:var(--warn)}
-  #chatScroll{flex:1;overflow-y:auto;padding:14px 12px 8px;display:flex;flex-direction:column;gap:12px}
-  .bubble{max-width:86%;padding:11px 13px;border-radius:16px;font-size:17px;line-height:1.5;box-shadow:var(--shadow);position:relative}
-  .bubble.ai{background:#fff;align-self:flex-start;border-bottom-left-radius:5px}
-  .bubble.me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
-  .bubble.me .hetext{direction:rtl}
-  .w{cursor:pointer;border-radius:4px;padding:0 1px;border-bottom:1px dotted #9db4ec}
-  .w:active{background:var(--blue-soft)}
-  .brow{display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap}
-  .icon-btn{background:var(--blue-soft);color:var(--blue);border:none;border-radius:9px;padding:5px 9px;font-size:13px;font-weight:600}
-  .bubble.me .icon-btn{background:rgba(255,255,255,.2);color:#fff}
-  .help-line{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted);display:none}
-  .help-line.show{display:block}
-  .help-line .tl{font-style:italic}
-  .correction{margin-top:9px;background:var(--warn-bg);border-radius:10px;padding:8px 10px;font-size:14px;border:1px solid #f0dfa8}
-  .correction .fix{direction:rtl;unicode-bidi:plaintext;font-weight:600;color:var(--ink)}
-  .grammar{margin-top:9px;background:#eef7ff;border:1px solid #bcd6ff;border-radius:10px;padding:9px 11px;font-size:14px}
-  .grammar b{color:var(--blue)}
-  .grammar .ex{direction:rtl;unicode-bidi:plaintext;font-weight:600;margin-top:4px}
-  .tiphint{align-self:center;background:#fff;border:1px dashed var(--blue-mid);color:var(--muted);border-radius:12px;padding:8px 12px;font-size:13px;max-width:90%;text-align:center}
-  .spot{background:linear-gradient(180deg,#fff,#f2f6ff);border:1.5px solid var(--blue-mid);border-radius:14px;padding:11px 13px;box-shadow:var(--shadow);align-self:flex-start;max-width:88%}
-  .spot .tag{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px}
-  .spot .big{direction:rtl;font-size:30px;font-weight:800;margin:3px 0 2px}
-  .spot .tl{font-style:italic;color:var(--muted)}
-  .spot .en{font-weight:600;margin-top:2px}
-  .spot .brow{margin-top:9px}
-  .celebrate{align-self:center;text-align:center;background:var(--good);color:#fff;border-radius:14px;padding:14px 18px;box-shadow:var(--shadow);max-width:90%}
-  .celebrate .big{font-size:22px;font-weight:800}
-  .typing{align-self:flex-start;color:var(--muted);font-size:14px;padding:4px 8px}
-  .typing span{animation:blink 1.2s infinite}
+  /* ---------- Chat ---------- */
+  .chat-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .chat-head .back{font-size:22px;width:38px}
+  .chat-head .who{flex:1}
+  .chat-head .who h3{margin:0;font-size:16px}
+  .chat-head .who .mission{font-size:12px;color:var(--gold);display:flex;align-items:center;gap:5px;margin-top:2px}
+  .msgs{flex:1;overflow-y:auto;padding:18px 14px 8px;display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;gap:8px;align-items:flex-end}
+  .row.me{flex-direction:row-reverse}
+  .avatar{width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;
+    justify-content:center;font-size:18px;background:var(--panel-2);border:1px solid var(--line)}
+  .bubble{max-width:78%;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:12px 14px;font-size:17px;line-height:1.5;position:relative}
+  .row.me .bubble{background:linear-gradient(120deg,var(--accent-2),#3a4fc4);border-color:transparent}
+  .bubble .heb{font-size:22px;line-height:1.6}
+  .bubble .reveal{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted);display:none}
+  .bubble .reveal.show{display:block}
+  .bubble .reveal .tl{color:var(--accent);font-style:italic}
+  .bubble .reveal .en{color:var(--text);margin-top:3px}
+  .bubble .tools{display:flex;gap:6px;margin-top:8px}
+  .bubble .tools button{width:32px;height:30px;border-radius:9px;background:var(--bg-2);
+    border:1px solid var(--line);font-size:14px;color:var(--muted)}
+  .bubble .tools button:active{background:var(--panel-2)}
+  .row.me .bubble .tools button{background:rgba(255,255,255,.14);border-color:transparent;color:#fff}
+  .correction{background:rgba(244,201,93,.1);border:1px solid rgba(244,201,93,.4);border-radius:12px;
+    padding:10px 12px;font-size:13px;color:#f6d78a;margin-top:6px;line-height:1.5}
+  .correction b{color:var(--gold)}
+  .tip{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+  .typing{display:flex;gap:4px;padding:6px 2px}
+  .typing span{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:bounce 1.2s infinite}
   .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
-  @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  @keyframes bounce{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
 
-  .suggests{display:flex;gap:8px;overflow-x:auto;padding:0 12px 8px}
-  .chip{white-space:nowrap;background:var(--blue-soft);color:var(--blue);border:1px solid var(--blue-mid);border-radius:20px;padding:8px 12px;font-size:14px;flex:0 0 auto}
-  .chip .tl{opacity:.7;font-size:12px;margin-left:5px}
-  .composer{border-top:1px solid var(--line);background:#fff;padding:9px 10px;display:flex;flex-direction:column;gap:8px}
-  .crow{display:flex;gap:8px;align-items:flex-end}
-  .crow textarea{resize:none;max-height:120px;direction:rtl}
-  .send{flex:0 0 auto;width:46px;height:46px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:20px}
-  .ctools{display:flex;gap:8px;overflow-x:auto}
-  .tool{flex:0 0 auto;background:var(--blue-soft);color:var(--blue);border:none;border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600;white-space:nowrap}
+  .win{margin:8px auto;text-align:center;background:rgba(61,220,151,.12);border:1px solid var(--good);
+    border-radius:16px;padding:16px;max-width:90%}
+  .win .big{font-size:34px}
+  .win h3{margin:6px 0 4px;color:var(--good)}
 
-  #hebKb{display:none;background:#eef2fb;border-top:1px solid var(--line);padding:7px 6px}
-  #hebKb.show{display:block}
-  .krow{display:flex;gap:4px;justify-content:center;margin-bottom:4px}
-  .key{flex:1;max-width:38px;height:42px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:19px;display:flex;align-items:center;justify-content:center}
-  .key:active{background:var(--blue-soft)}
-  .key.wide{max-width:none;flex:2;font-size:14px;font-weight:600}
+  /* composer */
+  .composer{flex:0 0 auto;border-top:1px solid var(--line);padding:10px 12px;background:var(--bg-2)}
+  .helps{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+  .helps::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;
+    padding:8px 12px;font-size:14px;white-space:nowrap;color:var(--text)}
+  .chip .heb{font-size:16px}
+  .compose-row{display:flex;gap:8px;align-items:flex-end}
+  .compose-row textarea{flex:1;resize:none;background:var(--panel);border:1px solid var(--line);
+    color:var(--text);border-radius:14px;padding:12px 14px;font-size:16px;max-height:120px;outline:none;font-family:inherit}
+  .compose-row textarea:focus{border-color:var(--accent)}
+  .send{width:48px;height:48px;border-radius:14px;flex:0 0 auto;
+    background:linear-gradient(90deg,var(--accent-2),var(--accent));color:#04121f;font-size:20px;font-weight:800}
+  .send:disabled{filter:grayscale(.7) brightness(.7)}
 
-  .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
-  .h1{font-size:22px;font-weight:800;margin:2px 0 2px}
-  .sub{color:var(--muted);font-size:14px;margin-bottom:14px}
-  .scn,.pack{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:11px;box-shadow:var(--shadow)}
-  .scn .emo,.pack .emo{font-size:27px}
-  .scn .info,.pack .info{flex:1}
-  .scn .info b,.pack .info b{font-size:16px}
-  .scn .info .m,.pack .info .m{font-size:13px;color:var(--muted);margin-top:2px}
-  .pack.locked{opacity:.5}
-  .pack .st{font-size:20px}
-  .wordrow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
-  .wordrow .he{direction:rtl;font-size:20px;font-weight:700;min-width:70px;text-align:right}
-  .wordrow .meta{flex:1}
-  .wordrow .meta .tl{font-style:italic;color:var(--muted);font-size:13px}
-  .wordrow .meta .en{font-size:15px}
-  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
-  .pill.learning{background:var(--warn-bg);color:var(--warn)}
-  .pill.known{background:#e4f6ec;color:var(--good)}
-  .empty{text-align:center;color:var(--muted);padding:40px 20px}
-  .empty .big{font-size:40px;margin-bottom:10px}
-  .stat{display:flex;gap:12px;margin-bottom:14px}
-  .stat .box{flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)}
-  .stat .n{font-size:28px;font-weight:800;color:var(--blue)}
-  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
-  .setrow{margin-bottom:18px}
-  .toggle{display:flex;gap:10px;flex-wrap:wrap}
-  .toggle button{flex:1;min-width:90px;padding:12px;border-radius:11px;border:2px solid var(--line);background:#fff;font-weight:600;color:var(--muted)}
-  .toggle button.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
-  input[type=range]{width:100%;accent-color:var(--blue)}
-  .rangelbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
-  .section-h{font-weight:800;font-size:16px;margin:20px 0 8px}
-  .gramrow{background:#eef7ff;border:1px solid #bcd6ff;border-radius:10px;padding:10px 12px;margin-bottom:9px;font-size:14px}
-  .gramrow .ex{direction:rtl;unicode-bidi:plaintext;font-weight:600;margin-top:4px}
-
-  #studyCard,#reviewCard{text-align:center}
-  #studyCard .big,#reviewCard .big{direction:rtl;font-size:46px;font-weight:800;margin:16px 0 8px}
-  #studyCard .tl,#reviewCard .tl{font-style:italic;color:var(--muted)}
-  #studyCard .en{font-size:22px;font-weight:700;margin-top:4px}
-  #reviewCard .reveal{display:none;margin:10px 0 18px}
-  #reviewCard .reveal.show{display:block}
-  #reviewCard .en{font-size:22px;font-weight:700;margin-top:4px}
-  .rev-actions{display:flex;gap:10px}
-  .progbar{height:7px;background:var(--blue-soft);border-radius:10px;overflow:hidden;margin:4px 0 6px}
-  .progbar div{height:100%;background:var(--blue);width:0;transition:width .2s}
-  .w.neww{color:var(--blue);font-weight:800;border-bottom:2px solid var(--blue)}
-  .pr-prompt{text-align:center;font-size:36px;font-weight:800;margin:14px 0;direction:rtl}
-  .pr-prompt.en{font-size:26px;direction:ltr}
-  .pr-opt{display:block;width:100%;text-align:center;background:#fff;border:2px solid var(--line);border-radius:12px;padding:15px;margin-bottom:10px;font-size:18px;color:var(--ink)}
-  .pr-opt .he{direction:rtl;font-weight:700}
-  .pr-opt.correct{border-color:var(--good);background:#e4f6ec}
-  .pr-opt.wrong{border-color:#d33;background:#ffeaea}
-  .pr-opt:disabled{opacity:.7}
-  .pr-fb{text-align:center;font-weight:700;margin:8px 0;min-height:22px}
-  #buildTray{display:none;flex-wrap:wrap;gap:6px;padding:8px;background:#eef2fb;border-top:1px solid var(--line);max-height:150px;overflow-y:auto}
-  #buildTray.show{display:flex}
-  .tile{background:#fff;border:1px solid var(--blue-mid);color:var(--ink);border-radius:9px;padding:9px 12px;font-size:17px;direction:rtl}
-  .tile:active{background:var(--blue-soft)}
-
-  #modal{position:fixed;inset:0;background:rgba(14,23,48,.45);z-index:130;display:none;align-items:flex-end;justify-content:center}
-  #modal.show{display:flex}
-  .sheet{background:#fff;width:100%;max-width:680px;border-radius:20px 20px 0 0;padding:20px 20px 30px;animation:up .2s ease;max-height:88vh;overflow-y:auto}
-  @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:translateY(0);opacity:1}}
-  .sheet .big{direction:rtl;font-size:38px;font-weight:800;text-align:center;margin:4px 0}
-  .sheet .tl{text-align:center;font-style:italic;color:var(--muted)}
-  .sheet .en{text-align:center;font-size:20px;font-weight:700;margin-top:4px}
-  .sheet .row{display:flex;gap:10px;margin-top:16px}
-  .vtable{width:100%;border-collapse:collapse;margin-top:14px}
-  .vtable td{border:1px solid var(--line);padding:7px 9px;font-size:14px;text-align:left}
-  .vtable td.he{direction:rtl;font-weight:700;text-align:right;font-size:16px}
-  .vtable td .en{color:var(--muted);font-size:12px}
-  @keyframes popIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
-  .bubble,.spot,.celebrate{animation:popIn .24s ease}
-  #app.noanim *{animation:none !important;transition:none !important}
-  .confetti{position:fixed;top:-14px;width:9px;height:14px;z-index:120;pointer-events:none;border-radius:2px;will-change:transform}
-  @keyframes fall{to{transform:translateY(110vh) rotate(600deg)}}
-  .home-hi{font-size:24px;font-weight:800;margin:2px 0 2px;direction:rtl;unicode-bidi:plaintext}
-  .home-sub{color:var(--muted);font-size:14px;margin-bottom:16px}
-  .home-grid{display:flex;gap:12px;margin-bottom:16px}
-  .home-grid .box{flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)}
-  .home-grid .n{font-size:26px;font-weight:800;color:var(--blue)}
-  .home-grid .l{font-size:12px;color:var(--muted);margin-top:2px}
-  .home-cta{display:flex;align-items:center;gap:13px;background:var(--blue);color:#fff;border:none;border-radius:16px;padding:15px;width:100%;text-align:left;margin-bottom:12px;box-shadow:var(--shadow)}
-  .home-cta .emo{font-size:26px}
-  .home-cta .lbl{flex:1}.home-cta .lbl b{font-size:16px;display:block}.home-cta .lbl .s{font-size:13px;opacity:.85}
-  .home-cta.alt{background:#fff;color:var(--ink)}.home-cta.alt .lbl .s{color:var(--muted);opacity:1}
-  .setflex{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .setflex .toggle{flex:0 0 auto;width:150px}
-  .ta-code{width:100%;height:76px;font-family:monospace;font-size:12px;margin-bottom:8px}
-  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
-  .toast.show{opacity:1}
-  a{color:var(--blue)}
-  .callbtn{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:17px;border-radius:50%;width:36px;height:36px;margin-right:8px}
-  .tool.rec{background:#ffdede;color:#c00;animation:pulse 1s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-  #callView{position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,#eaf1ff,#ffffff);color:var(--ink);display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:24px 18px 26px;max-width:680px;margin:0 auto}
-  #callView.show{display:flex}
-  .call-top{font-size:14px;color:var(--muted);margin-top:8px;min-height:22px;position:relative;z-index:2}
-  .orb-wrap{margin-top:34px}
-  .orb{width:132px;height:132px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:52px;transform-origin:center}
-  .orb.idle{animation:orbIdle 3s ease-in-out infinite}
-  .orb.listening{background:#12855a;animation:orbListen 1.1s ease-in-out infinite}
-  .orb.speaking{animation:orbGlow 1.2s ease-in-out infinite}
-  .orb.thinking{animation:orbThinkPulse .9s ease-in-out infinite}
-  @keyframes orbIdle{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-  @keyframes orbListen{0%,100%{box-shadow:0 0 0 0 rgba(18,133,90,.4);transform:scale(1)}50%{box-shadow:0 0 0 26px rgba(18,133,90,0);transform:scale(1.06)}}
-  @keyframes orbGlow{0%,100%{box-shadow:0 0 0 0 rgba(0,56,184,.35)}50%{box-shadow:0 0 0 22px rgba(0,56,184,0)}}
-  @keyframes orbThinkPulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.05);opacity:1}}
-  .call-caps{flex:1;width:100%;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:14px 4px}
-  .call-caption{font-size:24px;line-height:1.5;direction:rtl;unicode-bidi:plaintext}
-  .call-you{margin-top:18px;font-size:16px;color:var(--muted);direction:rtl;unicode-bidi:plaintext}
-  .call-controls{display:flex;align-items:center;gap:15px;margin-bottom:14px}
-  .call-mic{width:78px;height:78px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:32px;box-shadow:var(--shadow)}
-  .call-mic.rec{background:#ff4d4d;color:#fff;animation:pulse 1s infinite}
-  .call-side{width:50px;height:50px;border-radius:50%;background:var(--blue-soft);color:var(--blue);border:none;font-size:21px}
-  .call-end{background:var(--blue-soft);color:var(--blue);border:none;border-radius:22px;padding:11px 22px;font-size:15px;font-weight:600}
+  /* ---------- Settings sheet ---------- */
+  .sheet{position:absolute;inset:0;background:rgba(4,12,20,.6);display:none;align-items:flex-end;z-index:20}
+  .sheet.open{display:flex}
+  .sheet-inner{background:var(--bg-2);border-top-left-radius:24px;border-top-right-radius:24px;
+    width:100%;padding:22px;border-top:1px solid var(--line);max-height:88%;overflow-y:auto}
+  .sheet h2{margin:0 0 4px;font-size:20px}
+  .toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);padding:12px 18px;border-radius:30px;
+    font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:30;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0}
+  .switch{width:52px;height:30px;border-radius:20px;background:var(--line);position:relative;transition:.2s;flex:0 0 auto}
+  .switch.on{background:var(--accent-2)}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+    background:#fff;transition:.2s}
+  .switch.on::after{left:25px}
 </style>
-
+</head>
+<body>
 <div id="app">
+
   <!-- ============ ONBOARDING ============ -->
-  <div id="onboard">
-    <div class="ob-wrap">
-      <div>
-        <div class="brand">Yalla <span class="flag">🇮🇱</span></div>
-        <div class="brand-he he">יאללה</div>
-      </div>
+  <section id="scr-onboard" class="screen active">
+    <div class="brand">
+      <div class="logo">🧆</div>
+      <h1>Sababa</h1>
+      <div class="heb-name">סבבה</div>
+      <p>Learn the Hebrew you'll actually <b>speak</b> — by talking your way through real travel moments.</p>
+    </div>
 
-      <div class="ob-step active" data-step="0">
-        <p class="muted">Learn everyday Modern Hebrew the natural way - by <b>chatting</b> with a friendly AI tutor that only uses words you know, one new word at a time.</p>
-        <button class="btn" onclick="obNext()">Yalla, let's go →</button>
+    <div class="card" style="margin-top:auto">
+      <div class="field">
+        <label>OpenAI API key</label>
+        <input id="in-key" type="password" placeholder="sk-..." autocomplete="off" />
+        <div class="tiny" style="margin-top:8px">Stored only on this device. Powers the tutor. Get one at
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>.</div>
       </div>
-
-      <div class="ob-step" data-step="1">
-        <div class="h1">Vowels or no vowels?</div>
-        <p class="muted">Hebrew can be written with little vowel dots (<span class="he">נִקּוּד</span>) or without. Change it any time in Settings.</p>
-        <div class="choice" id="vowelChoice">
-          <button data-v="off" class="on" onclick="pickVowel('off')"><span><b>Without vowels</b><span class="sub">Like real texts & signs in Israel</span></span><span>אבג</span></button>
-          <button data-v="on" onclick="pickVowel('on')"><span><b>With vowels (nikud)</b><span class="sub">Easier while you're learning</span></span><span class="he">אָבָּג</span></button>
+      <div class="field">
+        <label>Your Hebrew level</label>
+        <div class="seg" id="seg-level">
+          <button data-v="beginner" class="on">Beginner</button>
+          <button data-v="some">Some</button>
+          <button data-v="intermediate">Intermediate</button>
         </div>
-        <button class="btn" onclick="obNext()">Continue →</button>
       </div>
-
-      <div class="ob-step" data-step="2">
-        <div class="h1">One Hebrew thing 🇮🇱</div>
-        <p class="muted">Hebrew changes depending on whether you're a boy or a girl (the words for "you", verb endings, etc.). This helps the tutor teach you the <b>right</b> forms.</p>
-        <div class="choice" id="genderChoice">
-          <button data-g="m" onclick="pickGender('m')"><span><b>I'm a boy</b><span class="sub">The tutor will use אַתָּה (ata) etc.</span></span><span>🚹</span></button>
-          <button data-g="f" onclick="pickGender('f')"><span><b>I'm a girl</b><span class="sub">The tutor will use אַתְּ (at) etc.</span></span><span>🚺</span></button>
-          <button data-g="x" onclick="pickGender('x')"><span><b>Rather not say</b><span class="sub">It'll keep things simple</span></span><span>🙂</span></button>
+      <div class="field">
+        <label>Show vowel points (nikud)?</label>
+        <div class="seg" id="seg-nikud">
+          <button data-v="on" class="on">On · easier</button>
+          <button data-v="off">Off · natural</button>
         </div>
-        <button class="btn" onclick="obNext()">Continue →</button>
       </div>
+      <button class="btn" id="btn-start" disabled>Yalla, let's go →</button>
+    </div>
+    <div style="height:20px"></div>
+  </section>
 
-      <div class="ob-step" data-step="3">
-        <div class="h1">A little about you</div>
-        <p class="muted">So your tutor can chat about things <i>you</i> like. Both optional.</p>
-        <div><label>What should we call you?</label><input id="obName" placeholder="Your name" autocomplete="off"></div>
-        <div><label>Your name in Hebrew <span class="muted" style="font-weight:400">(optional - so it's spelled right)</span></label><input id="obHeName" class="he" placeholder="שם" autocomplete="off" spellcheck="false" style="direction:rtl;text-align:right"></div>
-        <div><label>Things you're into</label><input id="obHobbies" placeholder="e.g. football, music, cooking" autocomplete="off"></div>
-        <button class="btn" onclick="obNext()">Continue →</button>
+  <!-- ============ HOME ============ -->
+  <section id="scr-home" class="screen">
+    <div class="topbar">
+      <div class="title"><span class="dot">🧆</span> Sababa</div>
+      <button class="iconbtn" id="btn-settings">⚙️</button>
+    </div>
+    <div class="home-scroll">
+      <p class="hi">Where are you traveling today, <b id="home-name">traveler</b>?</p>
+      <p class="tiny">Pick a scene. The person on the other side speaks only Hebrew — talk your way to the goal.</p>
+      <div class="section-h">Scenarios</div>
+      <div class="scenarios" id="scenario-grid"></div>
+      <div style="height:30px"></div>
+    </div>
+  </section>
+
+  <!-- ============ CHAT ============ -->
+  <section id="scr-chat" class="screen" style="padding:0">
+    <div class="chat-head">
+      <button class="back iconbtn" id="btn-back" style="border:none;background:none">←</button>
+      <div class="avatar" id="chat-avatar">🧑</div>
+      <div class="who">
+        <h3 id="chat-title">Scenario</h3>
+        <div class="mission">🎯 <span id="chat-mission">mission</span></div>
       </div>
-
-      <div class="ob-step" data-step="4">
-        <div class="h1">Connect your AI 🔌</div>
-        <p class="muted">Yalla uses OpenAI to power the tutor. Paste an OpenAI key <b>once</b> - it's saved only on this device and never shared.</p>
-        <div><label>OpenAI API key</label><input id="obKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false"></div>
-        <div class="keyhelp">🔑 <b>Where's this from?</b> platform.openai.com → API keys → "Create new secret key". It stays on your phone only.<br><br>💡 You can skip and add it later in Settings, but the tutor won't reply until it's in.</div>
-        <button class="btn" onclick="finishOnboard()">Start learning →</button>
-        <button class="btn ghost" onclick="finishOnboard(true)">Skip for now</button>
+      <button class="iconbtn" id="btn-restart" title="Restart scene">↺</button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="composer">
+      <div class="helps" id="helps"></div>
+      <div class="compose-row">
+        <textarea id="input" rows="1" placeholder="Reply in Hebrew (or English if stuck)…"></textarea>
+        <button class="send" id="btn-send">➤</button>
       </div>
+    </div>
+  </section>
 
-      <div class="dotrow" id="dots"></div>
+  <!-- ============ SETTINGS SHEET ============ -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-inner">
+      <h2>Settings</h2>
+      <p class="tiny">Everything is stored on this device only.</p>
+      <div class="field">
+        <label>OpenAI API key</label>
+        <input id="set-key" type="password" placeholder="sk-..." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Your name (optional)</label>
+        <input id="set-name" type="text" placeholder="e.g. Alex" />
+      </div>
+      <div class="field">
+        <label>Hebrew level</label>
+        <div class="seg" id="set-level">
+          <button data-v="beginner">Beginner</button>
+          <button data-v="some">Some</button>
+          <button data-v="intermediate">Intermediate</button>
+        </div>
+      </div>
+      <div class="row-between">
+        <div><b>Vowel points (nikud)</b><div class="tiny">Show vowels under Hebrew letters</div></div>
+        <div class="switch" id="set-nikud"></div>
+      </div>
+      <div class="row-between">
+        <div><b>Auto-speak tutor</b><div class="tiny">Read new Hebrew replies aloud</div></div>
+        <div class="switch" id="set-speak"></div>
+      </div>
+      <button class="btn" id="btn-save-settings" style="margin-top:10px">Save</button>
+      <button class="btn ghost" id="btn-close-settings" style="margin-top:10px">Close</button>
+      <button class="btn ghost" id="btn-reset" style="margin-top:10px;color:var(--bad);border-color:rgba(255,107,107,.4)">Reset everything</button>
     </div>
   </div>
 
-  <!-- ============ MAIN ============ -->
-  <header>
-    <div class="t">Yalla <small class="he">יאללה</small></div>
-    <div style="display:flex;align-items:center"><button class="callbtn" onclick="startCall()" title="Call the tutor">📞</button><div class="known" id="knownBadge">📚 0 words</div></div>
-  </header>
-
-  <main>
-    <!-- HOME -->
-    <div id="homePage" class="page"><div id="homeInner"></div></div>
-
-    <!-- CHAT -->
-    <div id="chatPage">
-      <div id="missionBar" class="mission hidden"></div>
-      <div id="chatScroll"></div>
-      <div class="suggests" id="suggests"></div>
-      <div id="buildTray"></div>
-      <div id="hebKb"></div>
-      <div class="composer">
-        <div class="ctools">
-          <button class="tool" id="micBtn" onclick="toggleMic('chat')">🎤 Speak</button>
-          <button class="tool" onclick="toggleBuild()">🧱 Build</button>
-          <button class="tool" onclick="toggleKb()">⌨️ <span class="he">עברית</span></button>
-          <button class="tool" onclick="helpAnswer()">💡 Help</button>
-          <button class="tool" id="endScnBtn" onclick="endScenario()" style="display:none">✕ End</button>
-        </div>
-        <div class="crow">
-          <textarea id="msgInput" rows="1" placeholder="Type in Hebrew…  (or English)"></textarea>
-          <button class="send" onclick="sendMsg()">➤</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- LEARN (packs) -->
-    <div id="learnPage" class="page">
-      <div class="h1">Learn 📖</div>
-      <div class="sub">Finish a pack to unlock the next. Read little stories too - it all feeds your chat.</div>
-      <button class="btn" onclick="go('stories')" style="margin-bottom:18px">📚 Read a story</button>
-      <div id="packList"></div>
-    </div>
-
-    <!-- STORIES -->
-    <div id="storiesPage" class="page">
-      <div class="h1">Reading 📚</div>
-      <div class="sub">Short stories at your level.</div>
-      <div id="storyArea"><div class="empty"><div class="big">📖</div><b>Ready to read?</b><p class="muted">Tap below for a little story at your level.</p></div></div>
-      <button class="btn" id="storyBtn" onclick="newStory()">✨ New story</button>
-      <button class="btn ghost small" style="width:auto;margin-top:10px" onclick="go('learn')">Back</button>
-    </div>
-
-    <!-- PACK STUDY -->
-    <div id="packPage" class="page">
-      <div class="card" id="studyCard">
-        <div class="sub" id="studyTitle">Pack</div>
-        <div class="progbar"><div id="studyProg"></div></div>
-        <div class="big hetext" id="studyHe">-</div>
-        <button class="icon-btn" onclick="speak(currentPack&&currentPack.words[packIdx].he)">🔊 Hear it</button>
-        <div class="tl" id="studyTl" style="margin-top:14px"></div>
-        <div class="en" id="studyEn"></div>
-        <div style="margin-top:22px"><button class="btn" id="studyNext" onclick="packNext()">Next →</button></div>
-        <button class="btn ghost small" style="margin-top:10px;width:auto" onclick="go('learn')">Quit</button>
-      </div>
-      <div id="packDone" class="empty hidden">
-        <div class="big">🎉</div><b>Pack complete!</b>
-        <p class="muted" id="packDoneMsg">New words unlocked.</p>
-        <button class="btn" onclick="practicePack()">💬 Practise in chat</button>
-        <button class="btn ghost" style="margin-top:10px" onclick="go('learn')">Back to packs</button>
-      </div>
-    </div>
-
-    <!-- PACK PRACTICE -->
-    <div id="practicePage" class="page">
-      <div class="card">
-        <div class="sub" id="prTitle">Practice</div>
-        <div class="progbar"><div id="prProg"></div></div>
-        <div class="pr-prompt" id="prPrompt">-</div>
-        <div id="prListen" style="text-align:center;margin-bottom:10px"></div>
-        <div id="prOpts"></div>
-        <div class="pr-fb" id="prFb"></div>
-        <button class="btn" id="prNext" style="display:none" onclick="prNextQ()">Next →</button>
-      </div>
-      <button class="btn ghost small" style="width:auto" onclick="go('learn')">Quit</button>
-    </div>
-
-    <!-- SCENARIOS -->
-    <div id="scnPage" class="page">
-      <div class="h1">Scenarios 🎭</div>
-      <div class="sub">Little role-plays with a mission. Great when you don't know what to chat about.</div>
-      <div id="scnList"></div>
-    </div>
-
-    <!-- WORDS -->
-    <div id="wordsPage" class="page">
-      <div class="h1">Your words 📚</div>
-      <div class="sub">Every word you meet lands here.</div>
-      <div class="stat">
-        <div class="box"><div class="n" id="stTotal">0</div><div class="l">met</div></div>
-        <div class="box"><div class="n" id="stKnown">0</div><div class="l">known</div></div>
-        <div class="box"><div class="n" id="stDue">0</div><div class="l">to review</div></div>
-      </div>
-      <button class="btn" id="reviewBtn" onclick="startReview()">Review now</button>
-      <div id="wordList" style="margin-top:16px"></div>
-      <div id="gramSection"></div>
-    </div>
-
-    <!-- REVIEW -->
-    <div id="reviewPage" class="page">
-      <div class="card" id="reviewCard">
-        <div class="sub" id="reviewProg">Review</div>
-        <div class="big hetext" id="revWord">-</div>
-        <button class="icon-btn" onclick="speak(reviewQueue[revIdx]&&reviewQueue[revIdx].he)">🔊 Hear it</button>
-        <div class="reveal" id="revReveal"><div class="tl" id="revTl"></div><div class="en" id="revEn"></div></div>
-        <div style="margin-top:20px">
-          <button class="btn" id="revShowBtn" onclick="revShow()">Show meaning</button>
-          <div class="rev-actions" id="revGrade" style="display:none">
-            <button class="btn ghost" onclick="revGrade(false)">😕 Forgot</button>
-            <button class="btn" onclick="revGrade(true)">😃 Got it</button>
-          </div>
-        </div>
-      </div>
-      <div id="reviewDone" class="empty hidden"><div class="big">🎉</div><b>Review done!</b><p class="muted">Nice work.</p><button class="btn" onclick="go('words')">Back to words</button></div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div id="setPage" class="page">
-      <div class="h1">Settings ⚙️</div>
-      <div class="setrow"><label>Vowels (nikud)</label><div class="toggle" id="setVowel"><button data-v="off" onclick="setVowel('off')">Without</button><button data-v="on" onclick="setVowel('on')">With vowels</button></div></div>
-      <div class="setrow"><label>I am a…</label><div class="toggle" id="setGender"><button data-g="m" onclick="setGender('m')">Boy 🚹</button><button data-g="f" onclick="setGender('f')">Girl 🚺</button><button data-g="x" onclick="setGender('x')">Rather not</button></div></div>
-      <div class="setrow"><label>Difficulty - <span id="lvlLabel"></span></label><input type="range" id="setLevel" min="1" max="5" step="1" oninput="setLevel(this.value)"><div class="rangelbl"><span>Keep it simple</span><span>Push me</span></div></div>
-      <div class="setrow"><label>Your name</label><input id="setName" oninput="saveProfile()" placeholder="Your name"></div>
-      <div class="setrow"><label>Your name in Hebrew</label><input id="setHeName" class="he" oninput="saveProfile()" placeholder="שם" spellcheck="false" style="direction:rtl;text-align:right"><p class="muted" style="margin-top:6px">The tutor will spell your name exactly like this.</p></div>
-      <div class="setrow"><label>Your interests</label><input id="setHobbies" oninput="saveProfile()" placeholder="football, music…"></div>
-      <div class="setrow"><label>OpenAI key</label><input id="setKey" type="password" placeholder="sk-..." spellcheck="false">
-        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small sec" onclick="saveKey()">Save key</button><button class="btn small sec" onclick="toggleKeyView()">👁 Show</button></div>
-        <p class="muted" style="margin-top:8px">Stored only on this device. If a key ever leaks, roll it at platform.openai.com and paste the new one here.</p></div>
-      <div class="setrow"><label>Voice</label>
-        <button class="btn small sec" onclick="testVoice()">🔊 Test voice</button>
-        <p class="muted" style="margin-top:8px">The tutor's voice is made by OpenAI using your key, so it works on any phone. Costs a tiny amount per phrase, and repeats are free.</p></div>
-      <div class="setrow"><label>Sound &amp; animation</label>
-        <div class="setflex"><span>Animations</span><div class="toggle" id="fxAnim"><button data-x="on" onclick="setFx('anim',true)">On</button><button data-x="off" onclick="setFx('anim',false)">Off</button></div></div>
-        <div class="setflex"><span>Sound effects</span><div class="toggle" id="fxSfx"><button data-x="on" onclick="setFx('sfx',true)">On</button><button data-x="off" onclick="setFx('sfx',false)">Off</button></div></div>
-      </div>
-      <div class="setrow"><label>Back up your progress</label>
-        <p class="muted" style="margin-bottom:8px">Your words and packs live on this device only. Save a backup so you never lose them, or move to another phone.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small sec" onclick="copyBackup()">📋 Copy code</button><button class="btn small sec" onclick="downloadBackup()">⬇️ Download file</button></div>
-        <label style="margin-top:14px">Restore</label>
-        <textarea id="restoreCode" class="ta-code" placeholder="Paste a backup code here…" spellcheck="false"></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small sec" onclick="restoreFromCode()">♻️ Restore from code</button><button class="btn small sec" onclick="document.getElementById('restoreFile').click()">📂 From file</button></div>
-        <input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="restoreFromFile(this.files[0])">
-      </div>
-      <div class="setrow"><button class="btn ghost" onclick="resetAll()">Reset everything</button></div>
-    </div>
-  </main>
-
-  <nav>
-    <button class="on" data-tab="home" onclick="go('home')"><span class="ic">🏠</span>Home</button>
-    <button data-tab="chat" onclick="goChat()"><span class="ic">💬</span>Chat</button>
-    <button data-tab="learn" onclick="go('learn')"><span class="ic">📖</span>Learn</button>
-    <button data-tab="scn" onclick="go('scn')"><span class="ic">🎭</span>Scenes</button>
-    <button data-tab="words" onclick="go('words')"><span class="ic">📚</span>Words</button>
-    <button data-tab="set" onclick="go('set')"><span class="ic">⚙️</span>Settings</button>
-  </nav>
+  <div class="toast" id="toast"></div>
 </div>
-
-<div id="callView">
-  <div class="call-top" id="callState">Tap the mic and talk</div>
-  <div class="orb-wrap"><div class="orb idle" id="callOrb">🗣️</div></div>
-  <div class="call-caps"><div id="callCaption" class="call-caption"></div><div id="callYou" class="call-you"></div></div>
-  <div class="call-controls">
-    <button class="call-side" onclick="callAgain()" title="Hear it again">🔊</button>
-    <button class="call-side" onclick="callSlower()" title="Slower">🐢</button>
-    <button class="call-mic" id="callMic" onclick="toggleMic('call')">🎤</button>
-    <button class="call-side" onclick="callHelp()" title="Help me answer">💡</button>
-  </div>
-  <button class="call-end" onclick="endCall()">✕ End call</button>
-</div>
-
-<div id="modal" onclick="if(event.target.id==='modal')closeModal()">
-  <div class="sheet">
-    <div style="text-align:center;font-weight:700;color:var(--blue);font-size:12px">WORD</div>
-    <div class="big hetext" id="mHe">-</div>
-    <div class="tl" id="mTl"></div>
-    <div class="en" id="mEn"></div>
-    <div class="row"><button class="btn ghost" onclick="speak(document.getElementById('mHe').textContent)">🔊 Hear</button><button class="btn" id="mSaveBtn" onclick="saveCurrentWord()">＋ Save word</button></div>
-    <button class="btn sec small" style="margin-top:12px;width:100%" id="mVerbBtn" onclick="showVerbForms()">🔤 Is it a verb? See all forms</button>
-    <div id="verbArea"></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
 "use strict";
-/* ================= storage ================= */
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-let settings=LS.get('yalla_settings',{onboarded:false,nikud:false,gender:'',level:2,name:'',heName:'',hobbies:'',tipShown:false,packs:{},voice:'auto',msgsSinceNew:0,newWordTarget:6});
-if(!settings.voice)settings.voice='auto';
-if(!settings.newWordTarget)settings.newWordTarget=5;
-if(settings.msgsSinceNew==null)settings.msgsSinceNew=0;
-if(!settings.fx)settings.fx={anim:true,sfx:true};
-if(!settings.packs)settings.packs={};
-let words=LS.get('yalla_words',[]);
-let dict=LS.get('yalla_dict',{});
-let history=LS.get('yalla_history',[]);
-let grammar=LS.get('yalla_grammar',[]);
-let verbCache=LS.get('yalla_verbs',{});
-function saveSettings(){LS.set('yalla_settings',settings)}
-function saveWords(){LS.set('yalla_words',words);rebuildKnown();refreshCounters()}
-/* known-word detection (client-side, so difficulty doesn't depend on the AI) */
-let knownSet=new Set(),masteredSet=new Set();
-function normHe(w){return String(w).replace(/[֑-ׇ]/g,'').replace(/[.,!?;:"'׃־״׳()\[\]{}…]/g,'').trim()}
-function stripNikud(s){return String(s).replace(/[֑-ׇ]/g,'')}
-function rebuildKnown(){
-  knownSet=new Set();masteredSet=new Set();
-  words.forEach(w=>{
-    const toks=[normHe(w.he)].concat(String(w.he).split(/\s+/).map(normHe)).filter(x=>x);
-    toks.forEach(t=>{knownSet.add(t);if(w.box>=2)masteredSet.add(t)});
-  });
-}
-function inSet(set,w){const n=normHe(w);if(!n||n.length<2)return true;if(set.has(n))return true;const pre='והבלכמש';if(n.length>2&&pre.indexOf(n[0])>=0&&set.has(n.slice(1)))return true;return false}
-function isKnownWord(w){return inSet(knownSet,w)}
-function isMastered(w){return inSet(masteredSet,w)}
-function isHeb(w){return /[֐-׿ﬀ-ﭏ]/.test(w)}
-function countUnknown(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&isHeb(n)&&!isKnownWord(p))c++});return c}
-function countUnmastered(text){let c=0;String(text).split(/\s+/).forEach(p=>{const n=normHe(p);if(n&&isHeb(n)&&!isMastered(p))c++});return c}
-function saveDict(){LS.set('yalla_dict',dict)}
-function saveHistory(){LS.set('yalla_history',history.slice(-40))}
-function saveGrammar(){LS.set('yalla_grammar',grammar)}
-function saveVerbs(){LS.set('yalla_verbs',verbCache)}
-function getKey(){return localStorage.getItem('yalla_key')||''}
-function setKeyRaw(k){if(k)localStorage.setItem('yalla_key',k)}
-const MODEL='gpt-4o-mini';
 
-/* ================= word packs ================= */
-const PACKS=[
- {id:'greet',emo:'👋',title:'First words',words:[
-   {he:'שלום',translit:'shalom',en:'hello / peace'},
-   {he:'כן',translit:'ken',en:'yes'},
-   {he:'לא',translit:'lo',en:'no'},
-   {he:'תודה',translit:'toda',en:'thank you'},
-   {he:'אני',translit:'ani',en:"I  (Hebrew has no 'am')"},
-   {he:'אתה',translit:'ata',en:"you  (to a boy)"},
-   {he:'את',translit:'at',en:"you  (to a girl)"},
-   {he:'בבקשה',translit:'bevakasha',en:"please / you're welcome"}]},
- {id:'people',emo:'🧍',title:'More people',words:[
-   {he:'הוא',translit:'hu',en:'he'},
-   {he:'היא',translit:'hi',en:'she'},
-   {he:'אנחנו',translit:'anachnu',en:'we'},
-   {he:'שם',translit:'shem',en:'name'},
-   {he:'חבר',translit:'chaver',en:'friend'},
-   {he:'סליחה',translit:'slicha',en:'sorry / excuse me'},
-   {he:'להתראות',translit:'lehitraot',en:'goodbye'},
-   {he:'בוקר טוב',translit:'boker tov',en:'good morning'}]},
- {id:'phrases',emo:'💬',title:'Handy phrases',words:[
-   {he:'מה שלומך',translit:'ma shlomcha / shlomech',en:'how are you?'},
-   {he:'אני בסדר',translit:'ani beseder',en:"I'm fine / okay"},
-   {he:'מה נשמע',translit:'ma nishma',en:"what's up?"},
-   {he:'איך קוראים לך',translit:'eich korim lecha / lach',en:"what's your name?"},
-   {he:'נעים מאוד',translit:'naim meod',en:'nice to meet you'},
-   {he:'כמה זה עולה',translit:'kama ze ole',en:'how much is it?'},
-   {he:'אני רוצה',translit:'ani rotze / rotza',en:'I want / I would like'},
-   {he:'אני לא מבין',translit:'ani lo mevin / mevina',en:"I don't understand"}]},
- {id:'question',emo:'❓',title:'Little words',words:[
-   {he:'מה',translit:'ma',en:'what'},
-   {he:'מי',translit:'mi',en:'who'},
-   {he:'איפה',translit:'eifo',en:'where'},
-   {he:'למה',translit:'lama',en:'why'},
-   {he:'טוב',translit:'tov',en:'good'},
-   {he:'גם',translit:'gam',en:'also / too'},
-   {he:'עכשיו',translit:'achshav',en:'now'},
-   {he:'מאוד',translit:"me'od",en:'very'}]},
- {id:'verbs',emo:'🏃',title:'Everyday verbs',words:[
-   {he:'רוצה',translit:'rotze / rotza',en:'want'},
-   {he:'יש',translit:'yesh',en:'there is / have'},
-   {he:'אוהב',translit:'ohev / ohevet',en:'love / like'},
-   {he:'הולך',translit:'holech / holechet',en:'go / walk'},
-   {he:'יודע',translit:'yodea / yodaat',en:'know'},
-   {he:'מדבר',translit:'medaber / medaberet',en:'speak'},
-   {he:'אוכל',translit:'ochel / ochelet',en:'eat'},
-   {he:'שותה',translit:'shote / shota',en:'drink'}]},
- {id:'food',emo:'🍽️',title:'Food & drink',words:[
-   {he:'מים',translit:'mayim',en:'water'},
-   {he:'קפה',translit:'kafe',en:'coffee'},
-   {he:'לחם',translit:'lechem',en:'bread'},
-   {he:'חלב',translit:'chalav',en:'milk'},
-   {he:'ביצה',translit:'beitza',en:'egg'},
-   {he:'פרי',translit:'pri',en:'fruit'},
-   {he:'ארוחה',translit:'arucha',en:'meal'},
-   {he:'טעים',translit:'taim',en:'tasty'}]},
- {id:'numbers',emo:'🔢',title:'Numbers 1-10',words:[
-   {he:'אחת',translit:'achat',en:'one'},
-   {he:'שתיים',translit:'shtayim',en:'two'},
-   {he:'שלוש',translit:'shalosh',en:'three'},
-   {he:'ארבע',translit:'arba',en:'four'},
-   {he:'חמש',translit:'chamesh',en:'five'},
-   {he:'שש',translit:'shesh',en:'six'},
-   {he:'שבע',translit:'sheva',en:'seven'},
-   {he:'שמונה',translit:'shmone',en:'eight'},
-   {he:'תשע',translit:'tesha',en:'nine'},
-   {he:'עשר',translit:'eser',en:'ten'}]},
- {id:'places',emo:'📍',title:'Out & about',words:[
-   {he:'בית',translit:'bayit',en:'house / home'},
-   {he:'רחוב',translit:'rechov',en:'street'},
-   {he:'חנות',translit:'chanut',en:'shop'},
-   {he:'כסף',translit:'kesef',en:'money'},
-   {he:'כמה',translit:'kama',en:'how much / many'},
-   {he:'ימינה',translit:'yamina',en:'to the right'},
-   {he:'שמאלה',translit:'smola',en:'to the left'},
-   {he:'ישר',translit:'yashar',en:'straight ahead'}]},
- {id:'time',emo:'🕒',title:'Time & days',words:[
-   {he:'יום',translit:'yom',en:'day'},
-   {he:'היום',translit:'hayom',en:'today'},
-   {he:'מחר',translit:'machar',en:'tomorrow'},
-   {he:'שעה',translit:'shaa',en:'hour / time'},
-   {he:'בוקר',translit:'boker',en:'morning'},
-   {he:'ערב',translit:'erev',en:'evening'},
-   {he:'שבוע',translit:'shavua',en:'week'},
-   {he:'שבת',translit:'shabat',en:'Saturday / Shabbat'}]},
+/* ------------------- State ------------------- */
+const LS = "sababa.v1";
+const state = {
+  key:"", level:"beginner", nikud:true, speak:true, name:"",
+};
+function load(){
+  try{ Object.assign(state, JSON.parse(localStorage.getItem(LS)||"{}")); }catch(e){}
+}
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+load();
+
+/* ------------------- Scenarios ------------------- */
+const SCENARIOS = [
+  { id:"cafe", emoji:"☕", title:"The café", role:"a friendly barista at a Tel Aviv café",
+    sub:"Order a coffee and something to eat",
+    mission:"Order a drink and a pastry, and ask the price",
+    opener:"A customer just walked up to your counter. Greet them warmly and ask what they'd like." },
+  { id:"taxi", emoji:"🚕", title:"The taxi", role:"a chatty taxi driver in Jerusalem",
+    sub:"Get to your hotel and agree a price",
+    mission:"Tell the driver your destination and settle on the fare",
+    opener:"A passenger just got into your taxi. Greet them and ask where they're going." },
+  { id:"market", emoji:"🍅", title:"The shuk", role:"a lively vendor at the Mahane Yehuda market",
+    sub:"Buy fruit and haggle a little",
+    mission:"Buy some fruit and try to get a better price",
+    opener:"A tourist is browsing your fruit stall. Call out to them and offer your goods." },
+  { id:"hotel", emoji:"🏨", title:"The hotel", role:"a receptionist at a small hotel",
+    sub:"Check in and ask about breakfast",
+    mission:"Check in with your name and ask what time breakfast is",
+    opener:"A guest arrives at your reception desk. Welcome them and ask how you can help." },
+  { id:"directions", emoji:"🧭", title:"Lost in the street", role:"a helpful local you stop on the street",
+    sub:"Ask the way to the beach",
+    mission:"Ask a stranger how to get to the beach and understand the answer",
+    opener:"A tourist stops you on the street looking a bit lost. Respond kindly and ask if they need help." },
+  { id:"falafel", emoji:"🧆", title:"Falafel stand", role:"the owner of a busy falafel stand",
+    sub:"Order and customize your pita",
+    mission:"Order a falafel and say what you do and don't want in it",
+    opener:"A hungry customer steps up to your falafel stand. Greet them and ask what they'd like." },
 ];
 
-/* ================= onboarding ================= */
-let obStep=0;const OB_TOTAL=5;
-function renderDots(){const d=document.getElementById('dots');d.innerHTML='';for(let i=0;i<OB_TOTAL;i++){const s=document.createElement('div');s.className='dot'+(i===obStep?' on':'');d.appendChild(s)}}
-function showStep(){document.querySelectorAll('.ob-step').forEach(s=>s.classList.toggle('active',+s.dataset.step===obStep));renderDots()}
-function obNext(){if(obStep<OB_TOTAL-1){obStep++;showStep()}}
-function pickVowel(v){settings.nikud=(v==='on');document.querySelectorAll('#vowelChoice button').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
-function pickGender(g){settings.gender=g;document.querySelectorAll('#genderChoice button').forEach(b=>b.classList.toggle('on',b.dataset.g===g))}
-function finishOnboard(skip){
-  settings.name=document.getElementById('obName').value.trim();
-  settings.heName=document.getElementById('obHeName').value.trim();
-  settings.hobbies=document.getElementById('obHobbies').value.trim();
-  const k=document.getElementById('obKey').value.trim();if(k)setKeyRaw(k);
-  settings.onboarded=true;saveSettings();
-  document.getElementById('onboard').classList.add('hidden');bootMain();
+/* small starter phrase chips per scenario (help for beginners) */
+const HELP_CHIPS = {
+  cafe:[["שלום","Hello"],["קפה בבקשה","A coffee please"],["כמה זה עולה?","How much is it?"],["תודה","Thanks"]],
+  taxi:[["שלום","Hello"],["למלון בבקשה","To the hotel please"],["כמה זה?","How much?"],["תודה רבה","Thank you"]],
+  market:[["שלום","Hello"],["כמה זה?","How much?"],["יקר מדי","Too expensive"],["אני רוצה","I want"]],
+  hotel:[["שלום","Hello"],["יש לי הזמנה","I have a reservation"],["מתי ארוחת בוקר?","When is breakfast?"],["תודה","Thanks"]],
+  directions:[["סליחה","Excuse me"],["איפה הים?","Where is the sea?"],["ימינה או שמאלה?","Right or left?"],["תודה","Thanks"]],
+  falafel:[["שלום","Hello"],["פלאפל בבקשה","A falafel please"],["בלי חריף","No spicy"],["הכל טוב","Everything's good"]],
+};
+
+/* ------------------- DOM helpers ------------------- */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function show(id){ $$(".screen").forEach(s=>s.classList.toggle("active", s.id===id)); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2200); }
+function stripNikud(s){ return (s||"").replace(/[֑-ׇ]/g,""); }
+
+/* ------------------- Onboarding wiring ------------------- */
+function segPick(container, val){
+  $$(container+" button").forEach(b=>b.classList.toggle("on", b.dataset.v===val));
+}
+$("#seg-level").addEventListener("click", e=>{ if(e.target.dataset.v){ state.level=e.target.dataset.v; segPick("#seg-level", state.level);} });
+$("#seg-nikud").addEventListener("click", e=>{ if(e.target.dataset.v){ state.nikud = e.target.dataset.v==="on"; segPick("#seg-nikud", e.target.dataset.v);} });
+$("#in-key").addEventListener("input", e=>{ $("#btn-start").disabled = e.target.value.trim().length<10; });
+$("#btn-start").addEventListener("click", ()=>{
+  state.key = $("#in-key").value.trim();
+  save(); goHome();
+});
+
+/* ------------------- Home ------------------- */
+function progressKey(id){ return "sababa.done."+id; }
+function goHome(){
+  $("#home-name").textContent = state.name || "traveler";
+  const grid = $("#scenario-grid"); grid.innerHTML="";
+  SCENARIOS.forEach(sc=>{
+    const done = localStorage.getItem(progressKey(sc.id))==="1";
+    const el = document.createElement("button");
+    el.className="sc";
+    el.innerHTML = `${done?'<span class="done">✓ done</span>':''}
+      <div class="emoji">${sc.emoji}</div>
+      <div><h3>${sc.title}</h3><div class="sub">${sc.sub}</div></div>`;
+    el.addEventListener("click", ()=>openScenario(sc));
+    grid.appendChild(el);
+  });
+  show("scr-home");
 }
 
-/* ================= navigation ================= */
-function go(tab){
-  const map={home:'homePage',chat:'chatPage',learn:'learnPage',pack:'packPage',practice:'practicePage',stories:'storiesPage',scn:'scnPage',words:'wordsPage',set:'setPage',review:'reviewPage'};
-  document.querySelectorAll('.page,#chatPage').forEach(p=>p.classList.remove('on'));
-  document.getElementById(map[tab]).classList.add('on');
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===(tab==='stories'||tab==='pack'||tab==='practice'?'learn':tab)));
-  if(tab==='home')renderHome();
-  if(tab==='words')renderWords();
-  if(tab==='scn')renderScenarios();
-  if(tab==='learn')renderLearn();
-  if(tab==='set')fillSettings();
+/* ------------------- Chat engine ------------------- */
+let chat = null; // {sc, messages:[{role,content}], done}
+
+function openScenario(sc){
+  chat = { sc, messages:[], done:false };
+  $("#chat-title").textContent = sc.title;
+  $("#chat-mission").textContent = sc.mission;
+  $("#chat-avatar").textContent = sc.emoji;
+  $("#msgs").innerHTML="";
+  // help chips
+  const helps = $("#helps"); helps.innerHTML="";
+  (HELP_CHIPS[sc.id]||[]).forEach(([he,en])=>{
+    const c=document.createElement("button"); c.className="chip";
+    c.innerHTML=`<span class="heb">${he}</span> · <span class="muted">${en}</span>`;
+    c.addEventListener("click",()=>{ const t=$("#input"); t.value=(t.value?t.value+" ":"")+he; t.focus(); autoGrow(); });
+    helps.appendChild(c);
+  });
+  show("scr-chat");
+  // opening turn from the tutor
+  requestReply(sc.opener, /*isSystemCue*/true);
 }
 
-/* ================= toast / modal ================= */
-let toastT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900)}
-let currentWord=null;
-function openWord(w){
-  currentWord=w;
-  document.getElementById('mHe').textContent=w.he;
-  document.getElementById('mTl').textContent=w.translit||'';
-  document.getElementById('mEn').textContent=w.en||'';
-  document.getElementById('mSaveBtn').textContent=words.some(x=>x.he===w.he)?'✓ Saved':'＋ Save word';
-  document.getElementById('verbArea').innerHTML='';
-  document.getElementById('mVerbBtn').style.display='';
-  document.getElementById('modal').classList.add('show');
-  speak(w.voiced||w.he);
-}
-function closeModal(){document.getElementById('modal').classList.remove('show')}
-function saveCurrentWord(){if(currentWord){addWord(currentWord);toast('Saved to your words');document.getElementById('mSaveBtn').textContent='✓ Saved'}}
+function systemPrompt(sc){
+  const levelText = {
+    beginner:"a beginner (knows only very basic words). Use very short, simple sentences and the most common words.",
+    some:"an advanced beginner. Use short everyday sentences.",
+    intermediate:"intermediate. Use natural everyday sentences at a normal pace."
+  }[state.level];
+  return `You are role-playing as ${sc.role}. You are a warm, patient native Modern Hebrew speaker in Israel.
+The person you are talking to is a traveler learning Hebrew — level: ${levelText}
+Their mission in this scene: "${sc.mission}".
 
-/* ================= speech ================= */
-let heVoice=null,ttsUnlocked=false;
-const aiAudioCache={};let aiAudioEl=null;
-function isHe(v){const l=(v.lang||'').toLowerCase();return l.startsWith('he')||l.startsWith('iw')}
-function loadVoices(){const vs=window.speechSynthesis?speechSynthesis.getVoices():[];heVoice=vs.find(isHe)||null}
-if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
-function unlockTTS(){if(ttsUnlocked||!('speechSynthesis'in window))return;ttsUnlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}loadVoices()}
-document.addEventListener('pointerdown',unlockTTS,{once:true});
-function deviceSpeak(text){if(!('speechSynthesis'in window))return false;if(!heVoice)loadVoices();speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='he-IL';u.rate=.85;if(heVoice)u.voice=heVoice;speechSynthesis.speak(u);return true}
-async function ttsUrl(text,slow){
-  const key=getKey();if(!key)return null;
-  const ck=(slow?'s|':'')+text;
-  if(aiAudioCache[ck])return aiAudioCache[ck];
-  const instructions=slow?'Read this Modern Hebrew very slowly and clearly, with a clear pause between each word, like a teacher reading aloud to a young beginner.':'Speak in Modern Hebrew, slowly and clearly, like a friendly teacher for a beginner.';
-  try{
-    const res=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini-tts',voice:'nova',input:text,instructions})});
-    if(!res.ok){if(res.status===401)toast('AI voice: check your key');return null}
-    const url=URL.createObjectURL(await res.blob());aiAudioCache[ck]=url;return url;
-  }catch(e){return null}
+STRICT OUTPUT RULES — reply with ONE JSON object and nothing else:
+{
+ "hebrew": "your reply in natural Modern Hebrew, fully vowelled with nikud",
+ "translit": "simple English-letters pronunciation of the hebrew",
+ "english": "English translation of the hebrew",
+ "correction": null OR "if the learner wrote Hebrew with a clear mistake, a short friendly note: the correct way, then a brief English explanation. If they wrote in English or transliteration, gently nudge them to try in Hebrew. Otherwise null.",
+ "tip": null OR "at most one short, optional cultural or language tip",
+ "missionComplete": true only if the mission has clearly been accomplished, else false
 }
-async function speakAI(text,slow){const url=await ttsUrl(text,slow);if(url)playUrl(url);else deviceSpeak(text)}
-function stopAllAudio(){try{if('speechSynthesis'in window)speechSynthesis.cancel()}catch(e){}try{if(aiAudioEl){aiAudioEl.pause();aiAudioEl.onended=null}}catch(e){}}
-function playUrl(url){try{stopAllAudio();aiAudioEl=new Audio(url);aiAudioEl.play()}catch(e){}}
-function playUrlAwait(url){return new Promise(function(res){try{stopAllAudio();aiAudioEl=new Audio(url);aiAudioEl.onended=function(){res()};aiAudioEl.onerror=function(){res()};aiAudioEl.play()}catch(e){res()}})}
-function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
-function speak(text,slow){if(!text)return;speakAI(text,slow)}
-async function playStory(){
-  const sents=(currentStory&&currentStory.sentences)||[];
-  for(let i=0;i<sents.length;i++){
-    const url=await ttsUrl(sents[i].voiced||sents[i].he,true);
-    if(url)await playUrlAwait(url);else deviceSpeak(sents[i].voiced||sents[i].he);
-    if(i<sents.length-1)await sleep(700);
+
+Behaviour:
+- Stay fully in character. Never say you are an AI or a model. Never break the scene.
+- Keep "hebrew" SHORT (1-2 sentences), matched to the learner's level.
+- React naturally to what they say; move the little story forward toward the mission.
+- Always include nikud in "hebrew".
+- Output ONLY the JSON object, no markdown, no backticks.`;
+}
+
+function addBubble({who, hebrew, translit, english, correction, tip}){
+  const row = document.createElement("div");
+  row.className = "row " + (who==="me"?"me":"them");
+  const avatar = who==="me" ? "🧑‍🎓" : chat.sc.emoji;
+  const heb = state.nikud ? hebrew : stripNikud(hebrew);
+  let toolsHtml = "";
+  if(who!=="me"){
+    toolsHtml = `<div class="tools">
+      <button data-act="speak" title="Hear it">🔊</button>
+      <button data-act="tl" title="Pronunciation">🔤</button>
+      <button data-act="en" title="Translation">🇬🇧</button>
+    </div>`;
   }
-}
-function testVoice(){if(!getKey()){toast('Add your OpenAI key in Settings first');return}toast('Testing voice…');speakAI('שלום, מה שלומך')}
+  row.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div class="bubble">
+      <div class="heb">${escapeHtml(heb)||""}</div>
+      ${toolsHtml}
+      <div class="reveal">
+        ${translit?`<div class="tl">${escapeHtml(translit)}</div>`:""}
+        ${english?`<div class="en">${escapeHtml(english)}</div>`:""}
+      </div>
+    </div>`;
+  $("#msgs").appendChild(row);
 
-/* ================= words / SRS ================= */
-const INTERVALS=[0,1,2,4,8,16,32];
-function addWord(w,known){
-  if(!w.he)return;
-  if(nameSet.has(normHe(w.he)))return;
-  dict[w.he]={translit:w.translit||'',en:w.en||''};saveDict();
-  let ex=words.find(x=>x.he===w.he);
-  if(ex){if(!ex.translit)ex.translit=w.translit;if(!ex.en)ex.en=w.en;if(known&&ex.box<2){ex.box=2}}
-  else{const box=known?2:0;words.push({he:w.he,translit:w.translit||'',en:w.en||'',box:box,seen:0,added:Date.now(),next:Date.now()+INTERVALS[box]*86400000})}
-  saveWords();
-}
-function cacheWord(w){if(!w||!w.he)return;if(nameSet.has(normHe(w.he)))return;dict[w.he]={translit:w.translit||'',en:w.en||''};saveDict()}
-function knownList(){return words.map(w=>w.he+' ('+w.en+')')}
-function refreshCounters(){
-  const known=words.filter(w=>w.box>=2).length,due=words.filter(w=>w.next<=Date.now()).length;
-  document.getElementById('knownBadge').textContent='📚 '+words.length+' word'+(words.length===1?'':'s');
-  const g=id=>document.getElementById(id);
-  if(g('stTotal')){g('stTotal').textContent=words.length;g('stKnown').textContent=known;g('stDue').textContent=due}
-}
-function renderWords(){
-  refreshCounters();
-  const box=document.getElementById('wordList');box.innerHTML='';
-  if(!words.length){box.innerHTML='<div class="empty"><div class="big">📚</div><b>No words yet</b><p class="muted">Do a pack in 📖 Learn, or tap any Hebrew word in chat.</p></div>'}
-  else{[...words].sort((a,b)=>b.added-a.added).forEach(w=>{
-    const row=document.createElement('div');row.className='wordrow';const known=w.box>=2;
-    row.innerHTML=`<div class="he">${esc(w.he)}</div><div class="meta"><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div></div><button class="icon-btn">🔊</button><span class="pill ${known?'known':'learning'}">${known?'known':'learning'}</span>`;
-    row.querySelector('button').onclick=()=>speak(w.he);box.appendChild(row);
-  })}
-  const gs=document.getElementById('gramSection');gs.innerHTML='';
-  if(grammar.length){
-    gs.innerHTML='<div class="section-h">Grammar tips 🔤</div>';
-    grammar.slice().reverse().forEach(t=>{const el=document.createElement('div');el.className='gramrow';el.innerHTML=`<b>${esc(t.point_en)}</b>${t.example_he?`<div class="ex">${esc(t.example_he)}</div>`:''}${t.example_en?`<div class="muted">${esc(t.example_en)}</div>`:''}`;gs.appendChild(el)});
+  const reveal = row.querySelector(".reveal");
+  row.querySelectorAll(".tools button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const act=b.dataset.act;
+      if(act==="speak"){ speak(hebrew); }
+      else { reveal.classList.toggle("show"); }
+    });
+  });
+
+  if(correction){
+    const c=document.createElement("div"); c.className="correction";
+    c.innerHTML = `<b>💡 Tip:</b> ${escapeHtml(correction)}`;
+    $("#msgs").appendChild(c);
   }
-}
-
-/* ================= review ================= */
-let reviewQueue=[],revIdx=0;
-function startReview(){
-  reviewQueue=words.filter(w=>w.next<=Date.now());
-  if(!reviewQueue.length)reviewQueue=[...words].sort((a,b)=>a.next-b.next).slice(0,10);
-  if(!reviewQueue.length){toast('No words to review yet - do a pack first');return}
-  reviewQueue.sort(()=>Math.random()-.5);revIdx=0;
-  document.getElementById('reviewDone').classList.add('hidden');document.getElementById('reviewCard').style.display='';
-  go('review');showRev();
-}
-function showRev(){const w=reviewQueue[revIdx];document.getElementById('revWord').textContent=w.he;document.getElementById('revTl').textContent=w.translit||'';document.getElementById('revEn').textContent=w.en||'';document.getElementById('revReveal').classList.remove('show');document.getElementById('revShowBtn').style.display='';document.getElementById('revGrade').style.display='none';document.getElementById('reviewProg').textContent=`Card ${revIdx+1} of ${reviewQueue.length}`;speak(w.he)}
-function revShow(){document.getElementById('revReveal').classList.add('show');document.getElementById('revShowBtn').style.display='none';document.getElementById('revGrade').style.display='flex'}
-function revGrade(ok){if(ok)sfxCorrect();else sfxWrong();const w=words.find(x=>x.he===reviewQueue[revIdx].he);if(w){w.seen++;w.box=ok?Math.min(6,w.box+1):Math.max(0,w.box-1);w.next=Date.now()+INTERVALS[w.box]*86400000;saveWords()}revIdx++;if(revIdx>=reviewQueue.length){document.getElementById('reviewCard').style.display='none';document.getElementById('reviewDone').classList.remove('hidden');sfxComplete();confetti()}else showRev()}
-
-/* ================= learn / packs ================= */
-function allItems(){return PACKS.map(p=>({kind:'pack',p:p})).concat(THEMES.map(t=>({kind:'theme',t:t})))}
-function itemDone(item){return item.kind==='pack'?!!settings.packs[item.p.id]:themeLevelDone(item.t)>0}
-function nextUnfinished(){const items=allItems();for(let i=0;i<items.length;i++){if(!itemDone(items[i]))return items[i]}return null}
-function renderLearn(){
-  const box=document.getElementById('packList');box.innerHTML='';
-  const items=allItems();
-  items.forEach((item,i)=>{
-    const done=itemDone(item),unlocked=(i===0)||itemDone(items[i-1]);
-    const el=document.createElement('div');el.className='pack'+(unlocked?'':' locked');
-    if(item.kind==='pack'){const p=item.p;
-      el.innerHTML=`<div class="emo">${p.emo}</div><div class="info"><b>${esc(p.title)}</b><div class="m">${p.words.length} words</div></div><div class="st">${done?'✅':(unlocked?'›':'🔒')}</div>`;
-      el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openPack(p)};
-    }else{const t=item.t,lv=themeLevelDone(t);
-      el.innerHTML=`<div class="emo">${t.emo}</div><div class="info"><b>${esc(t.title)}</b><div class="m">${lv?('✓ '+lv+' set'+(lv>1?'s':'')+' - tap for more'):'topic words'}</div></div><div class="st">${lv?'＋':(unlocked?'›':'🔒')}</div>`;
-      el.onclick=()=>{if(!unlocked){toast('Finish the pack above first');return}openThemeLevel(t)};
-    }
-    box.appendChild(el);
-  });
-}
-let currentPack=null,packIdx=0;
-function openPack(p){currentPack=p;packIdx=0;document.getElementById('packDone').classList.add('hidden');document.getElementById('studyCard').style.display='';go('pack');showPackCard()}
-function showPackCard(){
-  const w=currentPack.words[packIdx];
-  document.getElementById('studyTitle').textContent=currentPack.emo+' '+currentPack.title;
-  document.getElementById('studyProg').style.width=Math.round((packIdx+1)/currentPack.words.length*100)+'%';
-  document.getElementById('studyHe').textContent=w.he;
-  document.getElementById('studyTl').textContent=w.translit;
-  document.getElementById('studyEn').textContent=w.en;
-  document.getElementById('studyNext').textContent=(packIdx===currentPack.words.length-1)?'Practise →':'Next →';
-  speak(w.he);
-}
-function packNext(){if(packIdx<currentPack.words.length-1){packIdx++;showPackCard()}else startPractice()}
-function finishPack(score,total){
-  currentPack.words.forEach(w=>addWord(w,true));
-  settings.packs[currentPack.id]=true;saveSettings();
-  go('pack');
-  document.getElementById('studyCard').style.display='none';
-  document.getElementById('packDone').classList.remove('hidden');
-  sfxComplete();confetti();
-  const isGen=String(currentPack.id).indexOf(':')>=0;
-  const idx=PACKS.findIndex(p=>p.id===currentPack.id);
-  const nextP=(!isGen&&idx>=0)?PACKS[idx+1]:null;
-  const sc=(score!=null)?`You scored ${score}/${total}. `:'';
-  const tail=isGen?('You learned '+currentPack.words.length+' new words! Tap the topic again any time to go deeper.'):(nextP?('You learned '+currentPack.words.length+' words. Next up: '+nextP.title):('That\'s the last starter pack - nice work! Try the topic packs below.'));
-  document.getElementById('packDoneMsg').textContent=sc+tail;
-}
-
-/* ===== pack practice games ===== */
-let prQueue=[],prIdx=0,prScore=0;
-function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t}return a}
-function startPractice(){
-  const ws=currentPack.words;prQueue=[];
-  ws.forEach((w,i)=>{
-    const type=['he2en','listen','en2he'][i%3];
-    const distract=shuffle(ws.filter(x=>x.he!==w.he)).slice(0,3);
-    if(type==='en2he'){const opts=shuffle([w,...distract]);prQueue.push({mode:'en2he',prompt:w.en,opts:opts.map(x=>({label:x.he,he:true,correct:x.he===w.he}))});}
-    else{const opts=shuffle([w,...distract]);prQueue.push({mode:type,prompt:w.he,audio:w.he,listen:(type==='listen'),opts:opts.map(x=>({label:x.en,he:false,correct:x.en===w.en}))});}
-  });
-  prQueue=shuffle(prQueue);prIdx=0;prScore=0;go('practice');showPr();
-}
-function showPr(){
-  const q=prQueue[prIdx];
-  document.getElementById('prTitle').textContent=currentPack.emo+' '+currentPack.title+' - practice';
-  document.getElementById('prProg').style.width=Math.round(prIdx/prQueue.length*100)+'%';
-  const pr=document.getElementById('prPrompt'),listen=document.getElementById('prListen');listen.innerHTML='';
-  if(q.listen){pr.className='pr-prompt';pr.textContent='🔊';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Play again';b.onclick=()=>speak(q.audio);listen.innerHTML='<div class="muted" style="margin-bottom:6px">What did you hear?</div>';listen.appendChild(b);speak(q.audio);}
-  else if(q.mode==='en2he'){pr.className='pr-prompt en';pr.textContent=q.prompt;listen.innerHTML='<div class="muted">Which is it in Hebrew?</div>';}
-  else{pr.className='pr-prompt hetext';pr.textContent=q.prompt;listen.innerHTML='<div class="muted">What does it mean?</div>';}
-  const opts=document.getElementById('prOpts');opts.innerHTML='';
-  q.opts.forEach(o=>{const btn=document.createElement('button');btn.className='pr-opt';btn.innerHTML=o.he?`<span class="he">${esc(o.label)}</span>`:esc(o.label);btn.onclick=()=>prAnswer(btn,o);opts.appendChild(btn)});
-  document.getElementById('prFb').textContent='';
-  document.getElementById('prNext').style.display='none';
-}
-function prAnswer(btn,o){
-  const opts=document.getElementById('prOpts'),q=prQueue[prIdx];
-  const btns=opts.querySelectorAll('button');btns.forEach((b,i)=>{b.disabled=true;if(q.opts[i].correct)b.classList.add('correct')});
-  const fb=document.getElementById('prFb');
-  if(o.correct){prScore++;fb.textContent='✓ Correct!';fb.style.color='var(--good)';sfxCorrect()}
-  else{btn.classList.remove('correct');btn.classList.add('wrong');fb.textContent='✗ Not quite';fb.style.color='#d33';sfxWrong()}
-  document.getElementById('prNext').style.display='';
-}
-function prNextQ(){prIdx++;if(prIdx>=prQueue.length)finishPack(prScore,prQueue.length);else showPr()}
-function practicePack(){
-  history=[];saveHistory();document.getElementById('chatScroll').innerHTML='';
-  scenario=null;document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';
-  go('chat');
-  const wlist=currentPack.words.map(w=>w.he+' ('+w.en+')').join(', ');
-  primeAndReply(`[The learner just learned this word pack: ${wlist}. Start a very simple, friendly Hebrew conversation that uses ONLY these words plus words they already know. Keep it tiny and encouraging.]`);
-}
-
-/* ===== AI-generated topic packs ===== */
-let genpacks=LS.get('yalla_genpacks',{});
-const THEMES=[
- {id:'animals',emo:'🐾',title:'Animals'},{id:'colours',emo:'🎨',title:'Colours'},
- {id:'family',emo:'👪',title:'Family'},{id:'feelings',emo:'😊',title:'Feelings & moods'},
- {id:'body',emo:'💪',title:'The body'},{id:'clothes',emo:'👕',title:'Clothes'},
- {id:'foodmore',emo:'🍎',title:'More food'},{id:'drinks',emo:'🥤',title:'Drinks'},
- {id:'fruitveg',emo:'🥕',title:'Fruit & veg'},{id:'house',emo:'🏠',title:'Around the house'},
- {id:'kitchen',emo:'🍳',title:'Kitchen'},{id:'city',emo:'🏙️',title:'In the city'},
- {id:'nature',emo:'🌳',title:'Nature'},{id:'weather',emo:'🌦️',title:'Weather'},
- {id:'school',emo:'🎒',title:'School'},{id:'jobs',emo:'👷',title:'Jobs'},
- {id:'sports',emo:'⚽',title:'Sports'},{id:'music',emo:'🎵',title:'Music'},
- {id:'tech',emo:'📱',title:'Technology'},{id:'travel',emo:'✈️',title:'Travel'},
- {id:'transport',emo:'🚌',title:'Getting around'},{id:'shopping',emo:'🛍️',title:'Shopping'},
- {id:'money',emo:'💰',title:'Money'},{id:'timemore',emo:'⏰',title:'Time & dates'},
- {id:'numbersbig',emo:'💯',title:'Bigger numbers'},{id:'verbs2',emo:'🏃',title:'More verbs'},
- {id:'verbs3',emo:'🤸',title:'Even more verbs'},{id:'adjectives',emo:'📐',title:'Describing things'},
- {id:'opposites',emo:'↔️',title:'Opposites'},{id:'questions2',emo:'❔',title:'Asking questions'},
- {id:'health',emo:'🩺',title:'Health'},{id:'love',emo:'❤️',title:'Love & friendship'},
- {id:'holidays',emo:'🕎',title:'Holidays'},{id:'eatingout',emo:'🍽️',title:'Eating out'},
- {id:'directions',emo:'🧭',title:'Directions'},{id:'office',emo:'💼',title:'Work & office'},
- {id:'hobbies',emo:'🎯',title:'Hobbies'},{id:'garden',emo:'🌻',title:'Garden & plants'},
- {id:'beach',emo:'🏖️',title:'At the beach'},{id:'car',emo:'🚗',title:'Cars & driving'},
- {id:'internet',emo:'💻',title:'Phone & internet'},{id:'states',emo:'😴',title:'Everyday states'},
- {id:'slang',emo:'😎',title:'Israeli slang'},{id:'cooking',emo:'👩‍🍳',title:'Cooking words'},
- {id:'town',emo:'🏘️',title:'Places in town'},
-];
-function themeLevelDone(theme){let n=0;while(settings.packs[theme.id+':'+(n+1)])n++;return n}
-async function generatePack(theme,level){
-  const genId=theme.id+':'+level;
-  if(genpacks[genId])return genpacks[genId];
-  const avoid=words.map(w=>w.he).slice(-160).join(', ');
-  const d=await simpleAI(`Build a Modern Hebrew vocabulary set for a learner. Give 14 useful, common Modern Hebrew words for the topic "${theme.title}". Level ${level} (1 = most basic/common; higher = less common but still useful). ${settings.nikud?'Write Hebrew WITH nikud.':'Write Hebrew WITHOUT nikud.'} Do NOT repeat these words they already have: ${avoid||'(none)'}. Use British English spelling for meanings. Each transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe"). Reply JSON {"words":[{"he":"","translit":"easy english letters","en":"short english meaning"}]}.`,`Topic: ${theme.title}, level ${level}`,0.5);
-  if(!d||!Array.isArray(d.words))return null;
-  const ws=d.words.filter(w=>w&&w.he&&w.en).slice(0,16);
-  if(!ws.length)return null;
-  genpacks[genId]=ws;LS.set('yalla_genpacks',genpacks);
-  return ws;
-}
-async function openThemeLevel(theme){
-  const level=themeLevelDone(theme)+1,genId=theme.id+':'+level;
-  go('pack');
-  document.getElementById('packDone').classList.add('hidden');
-  document.getElementById('studyCard').style.display='';
-  document.getElementById('studyTitle').textContent=theme.emo+' '+theme.title;
-  document.getElementById('studyProg').style.width='0%';
-  document.getElementById('studyHe').textContent='…';
-  document.getElementById('studyEn').textContent='';
-  document.getElementById('studyNext').style.display='none';
-  document.getElementById('studyTl').textContent='✨ Generating your words…';
-  if(!getKey()){document.getElementById('studyTl').textContent='Add your OpenAI key in Settings to generate topic packs.';return}
-  let ws=genpacks[genId]||await generatePack(theme,level);
-  if(!ws||!ws.length){document.getElementById('studyTl').textContent='Could not generate right now - go back and try again.';return}
-  currentPack={id:genId,emo:theme.emo,title:theme.title+' '+level,words:ws};packIdx=0;
-  document.getElementById('studyNext').style.display='';
-  showPackCard();
-}
-
-/* ===== AI reading stories ===== */
-let currentStory=null;
-async function storyCall(list,stricter){
-  const vocab=list.length?list.join('; '):'(the learner knows very few words yet)';
-  return await simpleAI(`Write a VERY short, simple Modern Hebrew story for a learner: 3 to 5 short sentences. ${stricter?'BE STRICT this time - you used too many unknown words. ':''}Use ONLY these Hebrew words the learner has already learned: ${vocab}. You may add 0 to 3 NEW Hebrew words in TOTAL (at the learner's level, useful ones), and you MUST put EVERY new word in new_words with a gloss. Do NOT use ANY other Hebrew words. Proper names (people/places) are NOT vocabulary - list any you use in "names" and never put a name in new_words. Each sentence also needs "voiced": exactly the same Hebrew as "he" but WITH full nikud (including sin/shin dots) for correct pronunciation - it is used only for the voice, never shown. ${settings.nikud?'The "he" text should have nikud too.':'The "he" text has NO nikud.'} Use British English spelling. Do not use em dashes. Reply JSON {"title_he":"","title_en":"","sentences":[{"he":"","voiced":"","en":"natural english","literal":"word-for-word literal english"}],"names":[],"new_words":[{"he":"","translit":"","en":""}]}.`,'Keep it friendly and easy to read.',0.6);
-}
-async function newStory(){
-  if(!getKey()){toast('Add your OpenAI key in Settings first');return}
-  const area=document.getElementById('storyArea');
-  area.innerHTML='<div class="empty"><div class="big">✍️</div><b>Writing your story…</b></div>';
-  const btn=document.getElementById('storyBtn');btn.disabled=true;
-  const vocab=words.map(w=>w.he+' ('+w.en+')').slice(-220);
-  if(vocab.length<8){btn.disabled=false;area.innerHTML='<div class="empty"><div class="big">📖</div><b>Learn a few more words first</b><p class="muted">Finish a couple of packs in 📖 Learn, then your stories will use words you know.</p></div>';return}
-  let d=await storyCall(vocab,false),tries=0;
-  while(d&&Array.isArray(d.sentences)&&countUnknown(d.sentences.map(s=>s.he).join(' '))>3&&tries<2){d=await storyCall(vocab,true);tries++}
-  btn.disabled=false;btn.textContent='✨ Another story';
-  if(!d||!Array.isArray(d.sentences)||!d.sentences.length){area.innerHTML='<div class="empty"><div class="big">😕</div><b>Could not write one</b><p class="muted">Tap try again.</p></div>';return}
-  addNames(d.names);currentStory=d;renderStory(d);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)cacheWord(w)});
-}
-function renderStory(d){
-  const area=document.getElementById('storyArea');area.innerHTML='';
-  const card=document.createElement('div');card.className='card';
-  const h=document.createElement('div');h.className='h1 hetext';renderHebrewInto(h,d.title_he||'סיפור');card.appendChild(h);
-  if(d.title_en){const s=document.createElement('div');s.className='sub';s.textContent=d.title_en;card.appendChild(s)}
-  const playAll=document.createElement('button');playAll.className='icon-btn';playAll.textContent='🔊 Listen';playAll.style.marginBottom='6px';playAll.onclick=()=>playStory();card.appendChild(playAll);
-  (d.sentences||[]).forEach(s=>{
-    const p=document.createElement('div');p.style.cssText='margin:12px 0 0;padding-bottom:11px;border-bottom:1px solid var(--line)';
-    const he=document.createElement('div');he.className='hetext';he.style.fontSize='20px';he.style.lineHeight='1.6';renderHebrewInto(he,s.he||'');p.appendChild(he);
-    const row=document.createElement('div');row.className='brow';
-    const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(s.voiced||s.he,true);
-    const en=document.createElement('div');en.className='muted';en.style.cssText='display:none;margin-top:5px';en.innerHTML=esc(s.en||'')+(s.literal?`<div style="margin-top:3px">📝 Literal: ${esc(s.literal)}</div>`:'');
-    const tr=document.createElement('button');tr.className='icon-btn';tr.textContent='🇬🇧';tr.onclick=()=>{en.style.display=en.style.display==='none'?'block':'none'};
-    row.appendChild(sp);row.appendChild(tr);p.appendChild(row);p.appendChild(en);card.appendChild(p);
-  });
-  area.appendChild(card);
-}
-
-/* ================= scenarios ================= */
-const SCENARIOS=[
- {id:'cafe',emo:'☕',title:'At the café',mission:'Order a coffee and ask how much it costs.',role:'a friendly barista at an Israeli café'},
- {id:'shop',emo:'🛒',title:'At the shop',mission:'Ask for something and find out the price.',role:'a shopkeeper at a small Israeli grocery'},
- {id:'meet',emo:'👋',title:'Meeting someone',mission:'Say hello, give your name, and say where you are from.',role:'a friendly person meeting the learner for the first time'},
- {id:'taxi',emo:'🚕',title:'Taking a taxi',mission:'Tell the driver where you want to go and ask if it is far.',role:'a chatty taxi driver in Tel Aviv'},
- {id:'day',emo:'🏠',title:'Your day',mission:'Tell a friend two things you did today.',role:'a close friend asking how your day was'},
- {id:'food',emo:'🍽️',title:'At a restaurant',mission:'Ask for the menu and order a main dish.',role:'a waiter at a restaurant in Jerusalem'},
- {id:'dir',emo:'🗺️',title:'Ask directions',mission:'Ask how to get to the beach.',role:'a helpful stranger on the street in Tel Aviv'},
- {id:'friends',emo:'🎉',title:'Make a plan',mission:'Invite a friend to do something tomorrow.',role:'a friend who is free tomorrow'},
- {id:'family',emo:'👨‍👩‍👧',title:'Your family',mission:'Tell someone about one person in your family.',role:'a new friend curious about your family'},
- {id:'market',emo:'🍅',title:'At the market',mission:'Buy some fruit and ask for the price per kilo.',role:'a lively fruit seller at the Carmel market'},
- {id:'weather',emo:'☀️',title:'The weather',mission:'Say what the weather is like today.',role:'a neighbour chatting about the weather'},
- {id:'doctor',emo:'🩺',title:'Not feeling well',mission:'Tell the pharmacist you have a headache.',role:'a kind pharmacist'},
- {id:'hotel',emo:'🏨',title:'At the hotel',mission:'Check in and ask where breakfast is.',role:'a hotel receptionist'},
- {id:'phone',emo:'📞',title:'Call a friend',mission:'Phone a friend and ask what they are doing.',role:'a friend answering the phone'},
- {id:'bakery',emo:'🥐',title:'At the bakery',mission:'Buy bread and something sweet.',role:'a baker at a neighbourhood bakery'},
- {id:'lost',emo:'🧳',title:'Lost something',mission:'Say you lost your bag and describe it.',role:'a helpful worker at a lost-and-found'},
- {id:'birthday',emo:'🎂',title:'A birthday',mission:'Wish someone happy birthday and ask how old they are.',role:'a friend celebrating their birthday'},
- {id:'school',emo:'🏫',title:'At school',mission:'Tell a classmate what your favourite subject is.',role:'a friendly classmate'},
- {id:'pets',emo:'🐶',title:'Pets',mission:'Tell someone about an animal you like.',role:'a neighbour who loves animals'},
- {id:'invite',emo:'🍕',title:'Order pizza',mission:'Order a pizza and say what you want on it.',role:'someone taking your order at a pizza place'},
- {id:'compliment',emo:'😄',title:'Small talk',mission:'Give someone a compliment and ask about their day.',role:'a warm, chatty acquaintance'},
-];
-let scenario=null;
-function renderScenarios(){const box=document.getElementById('scnList');box.innerHTML='';SCENARIOS.forEach(s=>{const el=document.createElement('div');el.className='scn';el.innerHTML=`<div class="emo">${s.emo}</div><div class="info"><b>${s.title}</b><div class="m">${s.mission}</div></div><div>›</div>`;el.onclick=()=>startScenario(s);box.appendChild(el)})}
-function startScenario(s){scenario=s;history=[];saveHistory();document.getElementById('chatScroll').innerHTML='';const mb=document.getElementById('missionBar');mb.classList.remove('hidden');mb.innerHTML=`<div>🎯 <b>Mission:</b> ${esc(s.mission)}</div>`;document.getElementById('endScnBtn').style.display='';go('chat');primeAndReply(`[Scene start. You are ${s.role}. Open the conversation in simple Modern Hebrew. The learner's mission is: "${s.mission}". Stay in character. When they clearly complete the mission, set scenario_complete true and congratulate them.]`)}
-function endScenario(){scenario=null;document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';history=[];saveHistory();document.getElementById('chatScroll').innerHTML='';greet()}
-
-/* ================= system prompt ================= */
-function levelText(l){return['','Use only very short, very simple Hebrew (2-4 words per sentence). Go slowly.','Use simple everyday Hebrew, short sentences.','Use normal everyday Hebrew at a comfortable pace.','Use natural Hebrew with longer sentences and less help.','Speak as you would to a native speaker. Challenge them.'][l]}
-function genderText(){return{m:'The learner is a boy (male). Address them with אתה (ata) and use masculine verb forms when talking to/about them.',f:'The learner is a girl (female). Address them with את (at) and use feminine verb forms when talking to/about them.',x:'The learner prefers not to say their gender - keep it simple and default to masculine forms without making a point of it.'}[settings.gender]||''}
-function weakWords(){return words.filter(w=>w.box<2).slice(-8).map(w=>w.he).join(', ')}
-function systemPrompt(){
-  const nk=settings.nikud?'Write all Hebrew WITH nikud (vowel points).':'Write all Hebrew WITHOUT nikud (no vowel points).';
-  const known=knownList();const weak=weakWords();
-  const allowNew=(settings.msgsSinceNew||0)>=(settings.newWordTarget||6);
-  const recentSaid=history.filter(h=>h.role==='assistant').slice(-4).map(h=>h.content).filter(Boolean);
-  const nameLine=settings.heName?`The learner's name in Hebrew is "${settings.heName}". Always write their name exactly like that; never change the spelling. `:(settings.name?`The learner is called ${settings.name}. If you write their name, use normal English letters, never Hebrew or Arabic script. `:'');
-  return `You are a warm, patient Modern Hebrew tutor in an app called "Yalla".
-${nameLine}They can read Hebrew letters and want everyday spoken Israeli Hebrew.
-${genderText()}
-${settings.hobbies?'They like: '+settings.hobbies+'. Bring these in when natural. ':''}
-Difficulty ${settings.level}/5: ${levelText(settings.level)}
-${settings.level<=3?'TENSE: Use ONLY the present tense. Do NOT use past or future tense yet - never teach past/future in early conversations.':''}
-${nk}
-
-SCRIPT - very important: Write Hebrew using ONLY the Hebrew alphabet, plus plain English (Latin) letters when you add help/translation. NEVER output Arabic script or any other alphabet - no Arabic letters at all. Use BRITISH English spelling in all English text (e.g. colour, favourite, practise, realise).
-
-MOST IMPORTANT RULE - keep it understandable:
-- The learner currently knows ONLY these Hebrew words: ${known.length?known.join('; '):'(almost none yet)'}.
-- Reuse the words they ALREADY know as much as possible. New words should be RARE - only about one every 5 to 10 messages, NOT every message.
-- ${allowNew?'For THIS message you may introduce ONE new word if it truly helps - if you do, put it in "new_words". If not needed, keep using only known words.':'For THIS message, introduce NO new words. Use ONLY Hebrew words the learner already knows - for ANYTHING else (question words like "how"/"what", etc.) use ENGLISH, not new Hebrew. "new_words" must be empty ([]). This includes the very first greeting.'}
-- If they know fewer than about 30 words, speak MOSTLY in English with only a little known Hebrew, and never pack more than one new Hebrew word into a sentence.
-- Every transliteration (reply_translit and new_words) must EXACTLY match the Hebrew as written, with the correct vowels and gender (e.g. יפה = "yafe" for a boy, "yafa" for a girl - do not mix them up). Be precise.
-- Keep every message very short (usually one short sentence).
-${weak?'- Gently reuse these words they are still practising: '+weak+'.':''}
-
-CONVERSATION STYLE - you are a warm human chat partner, NOT a quiz bot. This is the most important part of your job:
-- Every single reply MUST do TWO things in order: (1) REACT to what they just said, then (2) move the chat forward with something NEW.
-- (1) REACT - never ignore their message. Be happy for good news ("יופי!" = great, "אחלה" = awesome), curious about what they share ("אה, נחמד!" = oh, nice!), sympathetic if needed. Answer any question they asked you.
-- (2) NEW - then add a comment or ask about a DIFFERENT topic than last time.
-- English is your friend: freely use English for the warm/reacting parts and to explain, especially early on. Keep the HEBREW to words they know (that is what the vocab rules above are about) - English does not count as "new words".
-- HARD RULES: Never send a reply that is only a greeting or only "מה שלומך". Ask "how are you" AT MOST ONCE, ever. Never repeat a question or sentence you already used.
-- Progress through topics one at a time, coming back to their interests (${settings.hobbies||'their hobbies'}): their name → where they live → family → a food they like → a hobby → their day → simple plans → feelings.
-- Also share tiny things about "yourself" so it feels mutual, not an interrogation.
-${recentSaid.length?'- You ALREADY said these recently - do NOT repeat them, clearly say something different:\n'+recentSaid.map(r=>'   · "'+r+'"').join('\n'):''}
-
-GOOD example (do this): learner says "אני טוב" → you reply: "יופי! Glad to hear it 😊 What's your name? (איך קוראים לך?)". Next turn you react to their name, then ask something else.
-BAD example (never do this): "שלום! מה שלומך?" and then later again "מה שלומך?".
-
-Also:
-- If the learner makes a mistake, gently model the correct version in "correction" (never scold).
-- You (the tutor) have NO fixed gender. The learner may address or refer to you as either male (אתה / הוא) or female (את / היא) - BOTH are correct. Never correct them on which gender they use for you, and don't count it as a mistake.
-- When it genuinely helps, give ONE tiny grammar tip in "grammar_tip" (e.g. a verb ending or gender), with a simple English explanation and a short example. Otherwise set show:false.
-- If in a scenario and the mission is done, set scenario_complete true and celebrate briefly in reply_he.
-
-PUNCTUATION: Never use em dashes or en dashes ("-" or "-") anywhere. Use commas, full stops, or a simple hyphen "-" instead.
-
-"reply_literal" = a word-for-word LITERAL English translation of your Hebrew (it may sound clunky in English - that is the point, it shows how the Hebrew is built).
-"names" = list any proper names (people or places) that appear in your reply_he. Names are NOT vocabulary: NEVER put a proper name in new_words.
-"reply_he_voiced" = EXACTLY the same words as reply_he but WITH full nikud (vowel points), including the correct sin/shin dot, so a text-to-speech voice pronounces it correctly (e.g. שמח becomes שָׂמֵחַ = "sameach", not "shameach"). This is used ONLY for the voice and is never shown on screen.
-
-Reply with ONE JSON object only (no markdown) with EXACTLY these keys:
-{"reply_he":"","reply_he_voiced":"","reply_translit":"","reply_en":"","reply_literal":"","names":[],"new_words":[{"he":"","translit":"","en":""}],"correction":{"had_mistake":false,"corrected_he":"","note_en":""},"grammar_tip":{"show":false,"point_en":"","example_he":"","example_en":""},"scenario_complete":false}`;
-}
-
-/* ================= OpenAI ================= */
-async function callAI(extraUserMsg){
-  const key=getKey();if(!key)return{error:'nokey'};
-  const msgs=[{role:'system',content:systemPrompt()}];
-  history.forEach(h=>msgs.push({role:h.role,content:h.content}));
-  if(extraUserMsg)msgs.push({role:'user',content:extraUserMsg});
-  try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:MODEL,messages:msgs,temperature:.9,response_format:{type:'json_object'}})});
-    if(res.status===401)return{error:'badkey'};
-    if(!res.ok){return{error:'http',detail:await res.text()}}
-    const data=await res.json();let c=data.choices[0].message.content.trim().replace(/^```json?/i,'').replace(/```$/,'').trim();
-    return{data:JSON.parse(c)};
-  }catch(e){return{error:'net',detail:String(e)}}
-}
-async function simpleAI(sys,user,temp){
-  const key=getKey();if(!key)return null;
-  try{const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:MODEL,temperature:temp||0,response_format:{type:'json_object'},messages:[{role:'system',content:sys},{role:'user',content:user}]})});
-  if(!res.ok)return null;const data=await res.json();return JSON.parse(data.choices[0].message.content)}catch(e){return null}
-}
-
-/* ================= chat rendering ================= */
-function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-const chatScroll=()=>document.getElementById('chatScroll');
-function scrollDown(){const c=chatScroll();c.scrollTop=c.scrollHeight}
-function renderHebrewInto(el,text){el.innerHTML='';if(!settings.nikud)text=stripNikud(text);String(text).split(/(\s+)/).forEach(p=>{if(/^\s+$/.test(p)){el.appendChild(document.createTextNode(p));return}const clean=normHe(p);if(!clean||!isHeb(clean)){el.appendChild(document.createTextNode(p));return}const span=document.createElement('span');span.className='w'+((!isKnownWord(p)&&!nameSet.has(normHe(p)))?' neww':'');span.textContent=p;span.onclick=()=>lookupWord(clean,text);el.appendChild(span)})}
-function addMe(text){const b=document.createElement('div');b.className='bubble me';const t=document.createElement('div');t.className='hetext';t.textContent=text;b.appendChild(t);chatScroll().appendChild(b);scrollDown()}
-function addAI(d,replay){
-  addNames(d.names);
-  const heText=(d.reply_he||'').trim();
-  const shown=heText||(d.reply_en||'').trim()||'…';
-  const b=document.createElement('div');b.className='bubble ai';
-  const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,shown);b.appendChild(t);
-  const row=document.createElement('div');row.className='brow';
-  const voiced=(d.reply_he_voiced||'').trim()||heText;
-  const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(voiced);
-  const hp=document.createElement('button');hp.className='icon-btn';hp.textContent='🇬🇧 translation';
-  const help=document.createElement('div');help.className='help-line';help.innerHTML=`<div class="tl">${esc(d.reply_translit||'')}</div><div>${esc(d.reply_en||'')}</div>`+(d.reply_literal?`<div style="margin-top:5px">📝 Literal: ${esc(d.reply_literal)}</div>`:'');
-  hp.onclick=()=>help.classList.toggle('show');row.appendChild(sp);row.appendChild(hp);b.appendChild(row);b.appendChild(help);
-  if(d.correction&&d.correction.had_mistake&&d.correction.corrected_he){const c=document.createElement('div');c.className='correction';c.innerHTML=`✏️ Better: <span class="fix">${esc(d.correction.corrected_he)}</span>`+(d.correction.note_en?`<div class="muted" style="margin-top:3px">${esc(d.correction.note_en)}</div>`:'');b.appendChild(c)}
-  if(d.grammar_tip&&d.grammar_tip.show&&d.grammar_tip.point_en){const g=document.createElement('div');g.className='grammar';g.innerHTML=`<b>🔤 Tip:</b> ${esc(d.grammar_tip.point_en)}`+(d.grammar_tip.example_he?`<div class="ex">${esc(d.grammar_tip.example_he)}</div>`:'')+(d.grammar_tip.example_en?`<div class="muted">${esc(d.grammar_tip.example_en)}</div>`:'');b.appendChild(g);if(!replay&&!grammar.some(x=>x.point_en===d.grammar_tip.point_en)){grammar.push({point_en:d.grammar_tip.point_en,example_he:d.grammar_tip.example_he||'',example_en:d.grammar_tip.example_en||''});saveGrammar()}}
-  if(Array.isArray(d.new_words)&&d.new_words.length){const nset=new Set();d.new_words.forEach(w=>{if(w&&w.he)String(w.he).split(/\s+/).forEach(tok=>{const n=normHe(tok);if(n)nset.add(n)})});t.querySelectorAll('.w').forEach(sp=>{if(nset.has(normHe(sp.textContent)))sp.classList.add('neww')})}
-  chatScroll().appendChild(b);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he){if(!replay)cacheWord(w);addSpotlight(w)}});
-  if(!replay&&d.scenario_complete&&scenario){const cel=document.createElement('div');cel.className='celebrate';cel.innerHTML='<div class="big">✅ Mission complete!</div><div>Nice one - you did it in Hebrew.</div>';chatScroll().appendChild(cel);document.getElementById('missionBar').classList.add('hidden');document.getElementById('endScnBtn').style.display='none';scenario=null;sfxComplete();confetti()}
+  if(tip){
+    const t=document.createElement("div"); t.className="tip"; t.textContent="🌟 "+tip;
+    $("#msgs").appendChild(t);
+  }
   scrollDown();
+  return row;
 }
-function addSpotlight(w){const s=document.createElement('div');s.className='spot';s.innerHTML=`<div class="tag">✨ New word</div><div class="big">${esc(w.he)}</div><div class="tl">${esc(w.translit||'')}</div><div class="en">${esc(w.en||'')}</div>`;const row=document.createElement('div');row.className='brow';const b=document.createElement('button');b.className='icon-btn';b.textContent='🔊 Hear it';b.onclick=()=>speak(w.he);row.appendChild(b);s.appendChild(row);chatScroll().appendChild(s)}
-function typingOn(){const t=document.createElement('div');t.className='typing';t.id='typing';t.innerHTML='<span>●</span><span>●</span><span>●</span>';chatScroll().appendChild(t);scrollDown()}
-function typingOff(){const t=document.getElementById('typing');if(t)t.remove()}
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-function allowNewNow(){return (settings.msgsSinceNew||0)>=(settings.newWordTarget||5)}
-async function getReply(extra){
-  let r=await callAI(extra);
-  if(r.error)return r;
-  const strict=settings.level<=3;
-  const allow=allowNewNow();
-  const thresh=!strict?99:(allow?1:0);
-  if(countUnknown(r.data.reply_he||'')>thresh){
-    const r2=await callAI(`[Too many Hebrew words the learner does not know. They know ONLY: ${knownList().join('; ')||'(almost none yet)'}. Rewrite using ONLY those Hebrew words${thresh>0?' plus AT MOST one new word (put it in new_words)':' and NO new Hebrew words at all'}; put everything else in ENGLISH. Present tense only. Keep your warm reaction - do not make it a bare "how are you". Same JSON format.]`);
-    if(!r2.error&&countUnknown(r2.data.reply_he||'')<=countUnknown(r.data.reply_he||''))r=r2;
+function scrollDown(){ const m=$("#msgs"); m.scrollTop=m.scrollHeight; }
+
+function showTyping(){
+  const row=document.createElement("div"); row.className="row them"; row.id="typing-row";
+  row.innerHTML=`<div class="avatar">${chat.sc.emoji}</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  $("#msgs").appendChild(row); scrollDown();
+}
+function hideTyping(){ const r=$("#typing-row"); if(r) r.remove(); }
+
+async function requestReply(userText, isSystemCue){
+  if(!isSystemCue){
+    addBubble({who:"me", hebrew:userText});
+    chat.messages.push({role:"user", content:userText});
+  } else {
+    chat.messages.push({role:"user", content:"[SCENE START] "+userText});
   }
-  return r;
-}
-function updateNewWordCounter(d){
-  const introduced=Array.isArray(d.new_words)&&d.new_words.some(w=>w&&w.he);
-  if(introduced){settings.msgsSinceNew=0;settings.newWordTarget=5}
-  else{settings.msgsSinceNew=(settings.msgsSinceNew||0)+1}
-  saveSettings();
-}
-let chatTurns=0;
-function maybeNudgePack(){
-  if(scenario)return;
-  const item=nextUnfinished();
-  if(!item)return;
-  chatTurns++;
-  if(chatTurns>=10){chatTurns=0;addPackNudge(item);sfxNudge()}
-}
-function addPackNudge(item){
-  const emo=item.kind==='pack'?item.p.emo:item.t.emo;
-  const title=item.kind==='pack'?item.p.title:item.t.title;
-  const el=document.createElement('div');el.className='spot';el.style.borderColor='var(--good)';
-  el.innerHTML=`<div class="tag" style="color:var(--good)">📖 Ready for more?</div><div style="font-weight:700;margin:4px 0">Want to learn new words? Next: ${emo} ${esc(title)}</div>`;
-  const row=document.createElement('div');row.className='brow';
-  const yes=document.createElement('button');yes.className='icon-btn';yes.style.cssText='background:var(--good);color:#fff';yes.textContent="Yes, let's go →";yes.onclick=()=>{el.remove();item.kind==='pack'?openPack(item.p):openThemeLevel(item.t)};
-  const no=document.createElement('button');no.className='icon-btn';no.textContent='Not now';no.onclick=()=>{el.remove()};
-  row.appendChild(yes);row.appendChild(no);el.appendChild(row);
-  chatScroll().appendChild(el);scrollDown();
-}
-async function primeAndReply(primeMsg){typingOn();const r=await getReply(primeMsg);typingOff();if(r.error){showAIError(r);return}history.push({role:'user',content:primeMsg,hidden:true});history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);renderSuggests([])}
-let aiBusy=false,greetPending=false;
-async function sendMsg(){const inp=document.getElementById('msgInput');const text=inp.value.trim();if(!text)return;if(aiBusy)return;if(!getKey()){showNoKey();return}aiBusy=true;inp.value='';inp.style.height='auto';addMe(text);history.push({role:'user',content:text});saveHistory();renderSuggests([]);typingOn();const r=await getReply(null);typingOff();if(r.error){showAIError(r);aiBusy=false;return}history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();addAI(r.data);updateNewWordCounter(r.data);maybeNudgePack();aiBusy=false}
-function showAIError(r){if(r.error==='nokey'||r.error==='badkey'){showNoKey(r.error==='badkey');return}let m='Something went wrong. Try again.';if(r.error==='net')m='Network problem - check your connection and try again.';if(r.error==='http')m='OpenAI error - check the key has credit.';const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff2f2';b.innerHTML=`<div style="color:#b00">⚠️ ${esc(m)}</div>`;chatScroll().appendChild(b);scrollDown()}
-function showNoKey(bad){const b=document.createElement('div');b.className='bubble ai';b.style.background='#fff8e8';b.innerHTML=`<div>🔑 ${bad?'That key didn\'t work.':'No AI key yet.'} Add your OpenAI key in <b>Settings</b> and the tutor will start chatting.</div><div class="brow"><button class="icon-btn" onclick="go('set')">Open Settings</button></div>`;chatScroll().appendChild(b);scrollDown()}
-function greet(){if(greetPending)return;if(!getKey()){showNoKey();return}greetPending=true;const hint=words.length<3?' Also gently suggest they tap the 📖 Learn tab to grab their first words.':'';const nm=settings.heName?' Greet them by their Hebrew name '+settings.heName+' (spelled exactly like that).':(settings.name?' You may say their name in English letters: '+settings.name+'. Do not spell their name in Hebrew or Arabic letters.':'');primeAndReply(`[The learner just opened the app. Greet them warmly. Use ONLY Hebrew words they already know plus ENGLISH - introduce NO new Hebrew words, not even question words. Keep it tiny and friendly.${nm}${hint}]`).then(function(){greetPending=false})}
-
-/* ================= tap lookup ================= */
-async function lookupWord(word,context){
-  if(dict[word]){openWord({he:word,translit:dict[word].translit,en:dict[word].en,voiced:dict[word].voiced});return}
-  openWord({he:word,translit:'…',en:'looking up…'});
-  if(!getKey()){document.getElementById('mEn').textContent='Add your key in Settings to look up words.';return}
-  const d=await simpleAI('You translate single Modern Hebrew words for a learner. Use British English spelling. The transliteration must EXACTLY match the Hebrew as written (correct vowels/gender, e.g. יפה = "yafe", שמח = "sameach"). Also give "voiced": the word with full nikud (incl. sin/shin dot) for pronunciation. Reply JSON {"translit":"easy english letters","en":"short english meaning","voiced":"word with nikud"}.',`Word: "${word}"  (from: "${context}")`,0);
-  if(d){dict[word]={translit:d.translit||'',en:d.en||'',voiced:d.voiced||''};saveDict();if(currentWord&&currentWord.he===word){currentWord={he:word,translit:d.translit,en:d.en,voiced:d.voiced};document.getElementById('mTl').textContent=d.translit||'';document.getElementById('mEn').textContent=d.en||''}}
-  else document.getElementById('mEn').textContent='Could not look up right now.';
+  $("#btn-send").disabled=true;
+  showTyping();
+  try{
+    const data = await callOpenAI(chat.sc);
+    hideTyping();
+    chat.messages.push({role:"assistant", content:JSON.stringify(data)});
+    addBubble({who:"them", hebrew:data.hebrew, translit:data.translit, english:data.english,
+               correction:data.correction, tip:data.tip});
+    if(state.speak) speak(data.hebrew);
+    if(data.missionComplete && !chat.done){ winScene(); }
+  }catch(err){
+    hideTyping();
+    const c=document.createElement("div"); c.className="correction";
+    c.style.borderColor="rgba(255,107,107,.5)"; c.style.color="#ffb3b3";
+    c.innerHTML = `<b>⚠️ Couldn't reach the tutor:</b> ${escapeHtml(err.message)}`;
+    $("#msgs").appendChild(c); scrollDown();
+  }finally{
+    $("#btn-send").disabled=false;
+  }
 }
 
-/* ================= verb table ================= */
-async function showVerbForms(){
-  const word=currentWord&&currentWord.he;if(!word)return;
-  const area=document.getElementById('verbArea');
-  if(verbCache[word]){renderVerb(verbCache[word]);return}
-  if(!getKey()){toast('Add your key in Settings first');return}
-  area.innerHTML='<p class="muted" style="text-align:center;margin-top:14px">Loading forms…</p>';
-  const d=await simpleAI(`You are a Hebrew teacher. For the given Hebrew word, if it is a verb, give its conjugations in PRESENT, PAST and FUTURE. ${settings.nikud?'Use nikud.':'No nikud.'} For each tense use these persons: "I (m)","I (f)","you (m)","you (f)","he","she","we","they". Reply JSON {"is_verb":true,"infinitive_he":"","infinitive_en":"","present":[{"who_en":"","he":"","translit":""}],"past":[{"who_en":"","he":"","translit":""}],"future":[{"who_en":"","he":"","translit":""}]}. Use British English spelling for the meanings. If it is NOT a verb, reply {"is_verb":false}.`,`Word: "${word}"`,0);
-  if(!d){area.innerHTML='<p class="muted" style="text-align:center">Could not load right now.</p>';return}
-  if(!d.is_verb){area.innerHTML='<p class="muted" style="text-align:center;margin-top:12px">That word isn\'t a verb 🙂</p>';return}
-  verbCache[word]=d;saveVerbs();renderVerb(d);
+function winScene(){
+  chat.done=true;
+  localStorage.setItem(progressKey(chat.sc.id),"1");
+  const w=document.createElement("div"); w.className="win";
+  w.innerHTML=`<div class="big">🎉</div><h3>Mission complete!</h3>
+    <div class="tiny">You handled "${escapeHtml(chat.sc.title)}" in Hebrew. Kol hakavod! 👏</div>`;
+  $("#msgs").appendChild(w); scrollDown();
+  if(navigator.vibrate) navigator.vibrate([30,40,30]);
 }
-function renderVerb(d){
-  const area=document.getElementById('verbArea');
-  area.innerHTML=`<div style="text-align:center;margin-top:14px;font-weight:700">${esc(d.infinitive_he||'')} <span class="muted" style="font-weight:400">- ${esc(d.infinitive_en||'to '+(currentWord&&currentWord.en||''))}</span></div>`;
-  const forms=d.forms?{present:d.forms}:d; // back-compat
-  [['present','⏱️ Present (now)'],['past','⏪ Past (did)'],['future','⏩ Future (will)']].forEach(([k,label])=>{
-    const list=forms[k];if(!Array.isArray(list)||!list.length)return;
-    const h=document.createElement('div');h.className='section-h';h.textContent=label;area.appendChild(h);
-    const t=document.createElement('table');t.className='vtable';
-    t.innerHTML='<tbody>'+list.map(f=>`<tr><td>${esc(f.who_en)}</td><td class="he">${esc(f.he)}</td><td><div>${esc(f.translit)}</div></td></tr>`).join('')+'</tbody>';
-    t.querySelectorAll('td.he').forEach(td=>td.onclick=()=>speak(td.textContent));
-    area.appendChild(t);
+
+/* ------------------- OpenAI ------------------- */
+async function callOpenAI(sc){
+  const msgs = [{role:"system", content:systemPrompt(sc)}, ...chat.messages.slice(-12)];
+  const res = await fetch("https://api.openai.com/v1/chat/completions",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+state.key },
+    body: JSON.stringify({
+      model:"gpt-4o-mini",
+      temperature:0.7,
+      response_format:{type:"json_object"},
+      messages: msgs
+    })
   });
-  const note=document.createElement('p');note.className='muted';note.style.marginTop='8px';note.textContent='Tap any Hebrew form to hear it.';area.appendChild(note);
+  if(!res.ok){
+    let m = "HTTP "+res.status;
+    try{ const j=await res.json(); if(j.error&&j.error.message) m=j.error.message; }catch(e){}
+    if(res.status===401) m="Invalid API key. Check it in ⚙️ Settings.";
+    throw new Error(m);
+  }
+  const j = await res.json();
+  let content = j.choices[0].message.content;
+  let data;
+  try{ data = JSON.parse(content); }
+  catch(e){ data = { hebrew: content, translit:"", english:"", correction:null, tip:null, missionComplete:false }; }
+  data.hebrew = data.hebrew || "";
+  return data;
 }
 
-/* ================= help me answer ================= */
-async function helpAnswer(){
-  if(!getKey()){showNoKey();return}
-  renderSuggests([],true);
-  const ctx=history.filter(h=>!h.hidden).slice(-6).map(h=>(h.role==='assistant'?'Tutor: ':'Me: ')+h.content).join('\n');
-  const kn=knownList();
-  const d=await simpleAI(`The learner is chatting in Modern Hebrew and is stuck. Suggest 3 short, natural things THEY could say next in Hebrew, using ONLY words they already know: ${kn.length?kn.join('; '):'(they know almost none yet - keep suggestions to 1-2 very basic words like שלום, כן, לא)'}. Do not use any other Hebrew words. ${settings.nikud?'With nikud.':'No nikud.'} Use British English spelling. Reply JSON {"suggestions":[{"he":"","translit":"","en":""}]}.`,ctx||'Start of chat.',.4);
-  renderSuggests(d&&d.suggestions?d.suggestions:[]);if(!d)toast('Could not get suggestions');
-}
-function renderSuggests(list,loading){const box=document.getElementById('suggests');box.innerHTML='';if(loading){box.innerHTML='<div class="chip">💡 thinking…</div>';return}(list||[]).forEach(s=>{const c=document.createElement('button');c.className='chip';c.innerHTML=`<span class="he">${esc(s.he)}</span><span class="tl">${esc(s.en||'')}</span>`;c.onclick=()=>{document.getElementById('msgInput').value=s.he;box.innerHTML='';document.getElementById('msgInput').focus()};box.appendChild(c)})}
-
-/* ================= hebrew keyboard ================= */
-const KB=[['ק','ר','א','ט','ו','ן','ם','פ'],['ש','ד','ג','כ','ע','י','ח','ל','ך','ף'],['ז','ס','ב','ה','נ','מ','צ','ת','ץ']];
-function buildKb(){const kb=document.getElementById('hebKb');kb.innerHTML='';KB.forEach(row=>{const r=document.createElement('div');r.className='krow';row.forEach(ch=>{const k=document.createElement('button');k.className='key';k.textContent=ch;k.onclick=()=>kbType(ch);r.appendChild(k)});kb.appendChild(r)});const r=document.createElement('div');r.className='krow';const sp=document.createElement('button');sp.className='key wide';sp.textContent='רווח';sp.onclick=()=>kbType(' ');const bs=document.createElement('button');bs.className='key wide';bs.textContent='⌫';bs.onclick=kbBack;r.appendChild(sp);r.appendChild(bs);kb.appendChild(r)}
-function kbType(ch){const i=document.getElementById('msgInput');i.value+=ch;i.focus()}
-function kbBack(){const i=document.getElementById('msgInput');i.value=i.value.slice(0,-1)}
-function toggleKb(){const k=document.getElementById('hebKb');const show=!k.classList.contains('show');k.classList.toggle('show',show);if(show)document.getElementById('buildTray').classList.remove('show')}
-function toggleBuild(){const t=document.getElementById('buildTray');const show=!t.classList.contains('show');t.classList.toggle('show',show);if(show){document.getElementById('hebKb').classList.remove('show');renderBuildTiles()}}
-function renderBuildTiles(){
-  const t=document.getElementById('buildTray');t.innerHTML='';
-  if(!words.length){t.innerHTML='<div class="muted" style="padding:8px">Learn some words in 📖 Learn first - then tap them here to build sentences without typing.</div>';return}
-  const search=document.createElement('input');search.id='buildSearch';search.placeholder='Search your words - English, Hebrew or sound…';search.autocomplete='off';search.spellcheck=false;search.style.cssText='flex:1 0 100%;margin-bottom:6px;padding:9px 11px';search.oninput=()=>fillBuildTiles(search.value);
-  t.appendChild(search);
-  const wrap=document.createElement('div');wrap.id='buildTiles';wrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;width:100%';
-  t.appendChild(wrap);
-  fillBuildTiles('');
-}
-function fillBuildTiles(q){
-  const wrap=document.getElementById('buildTiles');if(!wrap)return;wrap.innerHTML='';
-  q=(q||'').trim().toLowerCase();
-  let list=[...words].sort((a,b)=>b.added-a.added);
-  if(q)list=list.filter(w=>(w.he||'').toLowerCase().includes(q)||(w.translit||'').toLowerCase().includes(q)||(w.en||'').toLowerCase().includes(q));
-  if(!list.length){wrap.innerHTML='<div class="muted" style="padding:6px">No match - try another spelling.</div>';return}
-  list.slice(0,120).forEach(w=>{const c=document.createElement('button');c.className='tile';c.innerHTML=`<span class="he">${esc(w.he)}</span>`;c.title=w.en||'';c.onclick=()=>{const i=document.getElementById('msgInput');i.value+=(i.value&&!i.value.endsWith(' ')?' ':'')+w.he;i.focus()};wrap.appendChild(c)});
-  const bs=document.createElement('button');bs.className='tile';bs.style.borderColor='#d9a';bs.textContent='⌫';bs.onclick=()=>{const i=document.getElementById('msgInput');i.value=i.value.replace(/\s*\S+\s*$/,'')};wrap.appendChild(bs);
+/* ------------------- Text to speech (browser) ------------------- */
+let voices=[];
+function loadVoices(){ voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+if(window.speechSynthesis){ loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(hebrew){
+  if(!window.speechSynthesis) return;
+  const text = stripNikud(hebrew).trim();
+  if(!text) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang="he-IL";
+  const v = voices.find(v=>/he|iw/i.test(v.lang));
+  if(v) u.voice=v;
+  u.rate = state.level==="beginner"?0.85:0.95;
+  window.speechSynthesis.speak(u);
 }
 
-/* ================= settings ================= */
-function fillSettings(){
-  document.querySelectorAll('#setVowel button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='on')===settings.nikud));
-  document.querySelectorAll('#setGender button').forEach(b=>b.classList.toggle('on',b.dataset.g===settings.gender));
-  document.getElementById('setLevel').value=settings.level;updateLvlLabel();
-  document.getElementById('setName').value=settings.name||'';document.getElementById('setHeName').value=settings.heName||'';document.getElementById('setHobbies').value=settings.hobbies||'';document.getElementById('setKey').value=getKey();
-  [['anim','fxAnim'],['sfx','fxSfx']].forEach(function(p){const box=document.getElementById(p[1]);if(box)box.querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.x==='on')===!!(settings.fx&&settings.fx[p[0]])))});
+/* ------------------- Composer ------------------- */
+const input = $("#input");
+function autoGrow(){ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,120)+"px"; }
+input.addEventListener("input", autoGrow);
+input.addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMsg(); }});
+$("#btn-send").addEventListener("click", sendMsg);
+function sendMsg(){
+  const t = input.value.trim();
+  if(!t || $("#btn-send").disabled) return;
+  input.value=""; autoGrow();
+  requestReply(t, false);
 }
-function setVowel(v){settings.nikud=(v==='on');saveSettings();fillSettings()}
-function setGender(g){settings.gender=g;saveSettings();fillSettings()}
-function updateLvlLabel(){document.getElementById('lvlLabel').textContent=['','very simple','simple','normal','natural','native pace'][settings.level]}
-function setLevel(v){settings.level=+v;saveSettings();updateLvlLabel()}
-function saveProfile(){settings.name=document.getElementById('setName').value;settings.heName=document.getElementById('setHeName').value.trim();settings.hobbies=document.getElementById('setHobbies').value;saveSettings();rebuildNames()}
-function saveKey(){const k=document.getElementById('setKey').value.trim();if(k){setKeyRaw(k);toast('Key saved on this device')}else toast('Enter a key first')}
-let keyShown=false;function toggleKeyView(){keyShown=!keyShown;document.getElementById('setKey').type=keyShown?'text':'password'}
-function resetAll(){if(!confirm('Reset everything - words, packs, chat and settings on this device?'))return;['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks','yalla_key'].forEach(k=>localStorage.removeItem(k));location.reload()}
+$("#btn-back").addEventListener("click", goHome);
+$("#btn-restart").addEventListener("click", ()=>{ if(chat) openScenario(chat.sc); });
 
-/* ================= sound effects & music ================= */
-let actx=null;
-function audioCtx(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){actx=null}}return actx}
-function fxOn(k){return settings.fx&&settings.fx[k]}
-function tone(freq,start,dur,type,vol){const ac=audioCtx();if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.value=freq;o.connect(g);g.connect(ac.destination);const t=ac.currentTime+start;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.12,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.03)}
-function sfxSeq(seq,type,vol){if(!fxOn('sfx'))return;const ac=audioCtx();if(!ac)return;if(ac.state==='suspended')ac.resume();let t=0;seq.forEach(n=>{tone(n[0],t,n[1],type,vol);t+=n[1]*0.9})}
-function sfxCorrect(){sfxSeq([[660,.12],[880,.16]],'triangle',.13)}
-function sfxWrong(){sfxSeq([[220,.16],[165,.22]],'sawtooth',.08)}
-function sfxComplete(){sfxSeq([[523,.12],[659,.12],[784,.12],[1047,.3]],'triangle',.13)}
-function sfxTap(){sfxSeq([[880,.05]],'sine',.05)}
-function sfxNudge(){sfxSeq([[587,.1],[784,.15]],'sine',.09)}
-function applyAnim(){const a=document.getElementById('app');if(a)a.classList.toggle('noanim',!fxOn('anim'))}
-function confetti(){if(!fxOn('anim'))return;const colors=['#0038b8','#ffffff','#8fb0ff','#ffd54a','#3f6fe0'];for(let i=0;i<44;i++){const d=document.createElement('div');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=colors[i%colors.length];d.style.animation='fall '+(1.4+Math.random()*1.3)+'s linear forwards';document.body.appendChild(d);setTimeout(function(){d.remove()},2900)}}
-function unlockAudioOnce(){const ac=audioCtx();if(ac&&ac.state==='suspended')ac.resume()}
-document.addEventListener('pointerdown',unlockAudioOnce,{once:true});
-function setFx(k,v){settings.fx[k]=v;saveSettings();fillSettings();if(k==='anim')applyAnim();if(v)sfxTap()}
+/* ------------------- Settings ------------------- */
+function openSettings(){
+  $("#set-key").value = state.key;
+  $("#set-name").value = state.name;
+  segPick("#set-level", state.level);
+  $("#set-nikud").classList.toggle("on", state.nikud);
+  $("#set-speak").classList.toggle("on", state.speak);
+  $("#sheet").classList.add("open");
+}
+$("#btn-settings").addEventListener("click", openSettings);
+$("#set-level").addEventListener("click", e=>{ if(e.target.dataset.v){ state.level=e.target.dataset.v; segPick("#set-level",state.level);} });
+$("#set-nikud").addEventListener("click", ()=>$("#set-nikud").classList.toggle("on"));
+$("#set-speak").addEventListener("click", ()=>$("#set-speak").classList.toggle("on"));
+$("#btn-close-settings").addEventListener("click", ()=>$("#sheet").classList.remove("open"));
+$("#btn-save-settings").addEventListener("click", ()=>{
+  state.key = $("#set-key").value.trim();
+  state.name = $("#set-name").value.trim();
+  state.nikud = $("#set-nikud").classList.contains("on");
+  state.speak = $("#set-speak").classList.contains("on");
+  save(); $("#sheet").classList.remove("open"); $("#home-name").textContent = state.name||"traveler";
+  toast("Saved ✓");
+});
+$("#btn-reset").addEventListener("click", ()=>{
+  if(confirm("Erase your key, settings and progress on this device?")){
+    localStorage.clear(); location.reload();
+  }
+});
 
-/* ================= home ================= */
-function renderHome(){
-  const el=document.getElementById('homeInner');if(!el)return;
-  const known=words.length,mastered=words.filter(w=>w.box>=2).length;
-  const packsDone=allItems().filter(itemDone).length;
-  const due=words.filter(w=>w.next<=Date.now()).length;
-  const next=nextUnfinished(),nm=settings.heName?(settings.nikud?settings.heName:stripNikud(settings.heName)):settings.name;
-  let h=`<div class="home-hi">${nm?('שלום, '+esc(nm)+'! 👋'):'שלום! 👋'}</div><div class="home-sub">Yalla - let's learn some Hebrew.</div>`;
-  h+=`<div class="home-grid"><div class="box"><div class="n">${known}</div><div class="l">words met</div></div><div class="box"><div class="n">${mastered}</div><div class="l">known</div></div><div class="box"><div class="n">${packsDone}</div><div class="l">packs done</div></div></div>`;
-  h+=`<button class="home-cta" onclick="startCall()"><span class="emo">📞</span><span class="lbl"><b>Call your tutor</b><span class="s">Speak out loud, hands-free</span></span><span>→</span></button>`;
-  h+=`<button class="home-cta alt" onclick="goChat()"><span class="emo">💬</span><span class="lbl"><b>Chat with your tutor</b><span class="s">Practise talking in Hebrew</span></span><span>→</span></button>`;
-  if(next)h+=`<button class="home-cta alt" onclick="homeNext()"><span class="emo">${next.kind==='pack'?next.p.emo:next.t.emo}</span><span class="lbl"><b>Learn: ${esc(next.kind==='pack'?next.p.title:next.t.title)}</b><span class="s">Your next pack</span></span><span>→</span></button>`;
-  if(due>0)h+=`<button class="home-cta alt" onclick="startReview()"><span class="emo">📚</span><span class="lbl"><b>Review ${due} word${due===1?'':'s'}</b><span class="s">Keep them fresh</span></span><span>→</span></button>`;
-  h+=`<button class="home-cta alt" onclick="go('stories')"><span class="emo">📖</span><span class="lbl"><b>Read a story</b><span class="s">At your level</span></span><span>→</span></button>`;
-  h+=`<button class="home-cta alt" onclick="go('scn')"><span class="emo">🎭</span><span class="lbl"><b>Try a scenario</b><span class="s">Order a coffee, meet someone…</span></span><span>→</span></button>`;
-  el.innerHTML=h;
+/* ------------------- Boot ------------------- */
+function boot(){
+  if(state.key){ goHome(); }
+  else {
+    show("scr-onboard");
+    $("#in-key").value = state.key||"";
+    segPick("#seg-level", state.level);
+    segPick("#seg-nikud", state.nikud?"on":"off");
+  }
 }
-function homeNext(){const it=nextUnfinished();if(!it)return;it.kind==='pack'?openPack(it.p):openThemeLevel(it.t)}
-function ensureChatStarted(){const alive=history.filter(h=>!h.hidden);if(alive.length)return;if(chatScroll().children.length)return;if(getKey())greet();else showNoKey()}
-function goChat(){go('chat');ensureChatStarted()}
-
-/* ================= backup & restore ================= */
-const BK_KEYS=['yalla_settings','yalla_words','yalla_dict','yalla_history','yalla_grammar','yalla_verbs','yalla_genpacks'];
-function makeBackup(){const o={app:'yalla',v:1,t:Date.now(),data:{}};BK_KEYS.forEach(k=>{const v=localStorage.getItem(k);if(v!=null)o.data[k]=v});return o}
-function backupCode(){return btoa(unescape(encodeURIComponent(JSON.stringify(makeBackup()))))}
-function copyBackup(){const code=backupCode();const ta=document.createElement('textarea');ta.value=code;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();if(ok)toast('Backup code copied - paste it somewhere safe');else{const r=document.getElementById('restoreCode');if(r){r.value=code;toast('Copy failed - code shown below, copy it manually')}}sfxTap()}
-function downloadBackup(){const blob=new Blob([JSON.stringify(makeBackup())],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='yalla-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);toast('Backup file downloaded');sfxTap()}
-function applyBackup(obj){if(!obj||!obj.data){toast('That backup looks invalid');return}if(!confirm('Restore this backup? It will replace the words, packs and settings on this device.'))return;BK_KEYS.forEach(k=>{if(obj.data[k]!=null)localStorage.setItem(k,obj.data[k])});toast('Restored! Reloading…');setTimeout(function(){location.reload()},700)}
-function restoreFromCode(){const t=(document.getElementById('restoreCode').value||'').trim();if(!t){toast('Paste a backup code first');return}let obj;try{obj=JSON.parse(decodeURIComponent(escape(atob(t))))}catch(e){try{obj=JSON.parse(t)}catch(e2){toast('That code could not be read');return}}applyBackup(obj)}
-function restoreFromFile(file){if(!file)return;const r=new FileReader();r.onload=function(){let obj;try{obj=JSON.parse(r.result)}catch(e){toast('Could not read that file');return}applyBackup(obj)};r.readAsText(file)}
-
-/* ================= names (not vocabulary) ================= */
-let nameSet=new Set();
-function rebuildNames(){nameSet=new Set();if(settings.heName)String(settings.heName).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)nameSet.add(n)})}
-function addNames(arr){if(Array.isArray(arr))arr.forEach(x=>{if(x)String(x).split(/\s+/).forEach(t=>{const n=normHe(t);if(n)nameSet.add(n)})})}
-
-/* ================= microphone -> text (Whisper) ================= */
-let mediaRec=null,recChunks=[],recording=false,micMode='chat';
-function setMicUI(on){const cb=document.getElementById('micBtn');if(cb){cb.textContent=(on&&micMode==='chat')?'⏹ Stop':'🎤 Speak';cb.classList.toggle('rec',on&&micMode==='chat')}const mb=document.getElementById('callMic');if(mb){mb.classList.toggle('rec',on&&micMode==='call');mb.textContent=(on&&micMode==='call')?'⏹':'🎤'}if(micMode==='call')setOrb(on?'listening':'thinking')}
-async function toggleMic(mode){
-  if(recording){stopMic();return}
-  micMode=mode||'chat';
-  if(!getKey()){toast('Add your OpenAI key in Settings first');return}
-  if(!window.isSecureContext){toast('The mic needs the app opened from its web link (https), not a saved file');if(micMode==='call')setOrb('idle');return}
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==='undefined'){toast('Microphone is not supported in this browser');return}
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    recChunks=[];mediaRec=new MediaRecorder(stream);
-    mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data)};
-    mediaRec.onstop=async function(){stopOrbAnim();stream.getTracks().forEach(t=>t.stop());const blob=new Blob(recChunks,{type:(mediaRec&&mediaRec.mimeType)||'audio/webm'});await transcribe(blob)};
-    mediaRec.start();recording=true;setMicUI(true);sfxTap();
-    if(micMode==='call'){try{const ac=audioCtx();if(ac){if(ac.state==='suspended')ac.resume();const s=ac.createMediaStreamSource(stream);const an=ac.createAnalyser();an.fftSize=128;s.connect(an);callAnalyser=an;animateOrb('listening')}}catch(e){}}
-  }catch(e){const nm=e&&e.name;const msg=nm==='NotAllowedError'?'Mic permission blocked - allow it in your browser settings':(nm==='NotFoundError'?'No microphone found':'Mic error: '+(nm||e));toast(msg);if(micMode==='call')setOrb('idle')}
-}
-function stopMic(){if(mediaRec&&recording){recording=false;setMicUI(false);try{mediaRec.stop()}catch(e){}}}
-function audioExt(mime){mime=(mime||'').toLowerCase();if(mime.indexOf('mp4')>=0||mime.indexOf('m4a')>=0)return'mp4';if(mime.indexOf('ogg')>=0)return'ogg';if(mime.indexOf('mpeg')>=0)return'mp3';if(mime.indexOf('wav')>=0)return'wav';return'webm'}
-async function transcribe(blob){
-  const key=getKey();if(!key)return;
-  if(micMode==='call')setOrb('thinking');else toast('Transcribing…');
-  try{
-    const fd=new FormData();fd.append('file',blob,'speech.'+audioExt(blob.type));fd.append('model','whisper-1');fd.append('language','he');fd.append('prompt','שיחה יומיומית בעברית פשוטה.');
-    const res=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
-    if(!res.ok){if(micMode==='call')setOrb('idle');toast('Transcribe failed ('+res.status+')'+(res.status===401?' - check your key':''));return}
-    const data=await res.json();const text=(data.text||'').trim();
-    if(!text){if(micMode==='call')setOrb('idle');toast("Didn't catch anything - try again");return}
-    if(micMode==='call')callUserSaid(text);
-    else{const inp=document.getElementById('msgInput');inp.value=(inp.value?inp.value+' ':'')+text;inp.focus();inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px'}
-  }catch(e){if(micMode==='call')setOrb('idle');toast('Transcribe error: '+(e&&e.message||e))}
-}
-
-/* ================= call / speaking mode ================= */
-let callOn=false,callLastHe='',callVoiced='';
-function startCall(){
-  if(!getKey()){toast('Add your OpenAI key in Settings first');go('set');return}
-  callOn=true;document.getElementById('callView').classList.add('show');
-  document.getElementById('callCaption').innerHTML='<span style="opacity:.85">שלום! 👋</span>';document.getElementById('callYou').textContent='';
-  callTutorTurn('[You are now on a friendly voice call with the learner. Greet them warmly in very simple Modern Hebrew and ask one easy question to start chatting. Keep it short.]',true);
-}
-function endCall(){callOn=false;stopMic();stopOrbAnim();try{if(aiAudioEl)aiAudioEl.pause()}catch(e){}document.getElementById('callView').classList.remove('show')}
-function setOrb(state){const o=document.getElementById('callOrb');if(o&&!o.dataset.viz)o.className='orb '+state;const s=document.getElementById('callState');if(s)s.textContent=state==='listening'?'🔴 Listening… tap ⏹ to stop':state==='thinking'?'Thinking…':state==='speaking'?'🗣️ Speaking…':'Tap the mic and talk'}
-let callAnalyser=null,callRAF=null;
-function animateOrb(cls){const o=document.getElementById('callOrb');if(!o||!callAnalyser)return;o.dataset.viz='1';o.className='orb '+(cls||'speaking');const data=new Uint8Array(callAnalyser.frequencyBinCount);const step=function(){if(!callAnalyser)return;callAnalyser.getByteFrequencyData(data);let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];const avg=sum/data.length;const scale=1+Math.min(avg/210,0.32);o.style.transform='scale('+scale.toFixed(3)+')';callRAF=requestAnimationFrame(step)};step()}
-function callAgain(){if(callVoiced){setOrb('speaking');callSpeak(callVoiced,function(){if(callOn)setOrb('idle')})}}
-function stopOrbAnim(){if(callRAF){cancelAnimationFrame(callRAF);callRAF=null}callAnalyser=null;const o=document.getElementById('callOrb');if(o){delete o.dataset.viz;o.style.transform=''}}
-async function callSpeak(text,cb,slow){
-  if(!text){if(cb)cb();return}
-  const url=await ttsUrl(text,!!slow);
-  if(!url){deviceSpeak(text);if(cb)cb();return}
-  const ac=audioCtx();let src=null,an=null;
-  try{
-    stopAllAudio();const el=new Audio(url);aiAudioEl=el;
-    if(ac){if(ac.state==='suspended')ac.resume();src=ac.createMediaElementSource(el);an=ac.createAnalyser();an.fftSize=128;src.connect(an);an.connect(ac.destination);callAnalyser=an;animateOrb('speaking')}
-    const done=function(){stopOrbAnim();try{if(src)src.disconnect();if(an)an.disconnect()}catch(e){}if(cb)cb()};
-    el.onended=done;el.onerror=done;
-    const p=el.play();if(p&&p.catch)p.catch(function(){stopOrbAnim();deviceSpeak(text);done()});
-  }catch(e){stopOrbAnim();playUrl(url);if(cb)setTimeout(cb,1500)}
-}
-async function callTutorTurn(prime,isGreet){
-  setOrb('thinking');
-  const r=await getReply(isGreet?prime:null);
-  if(!callOn)return;
-  if(r.error){setOrb('idle');document.getElementById('callCaption').innerHTML='<span style="opacity:.8">Something went wrong. Tap the mic to try again.</span>';return}
-  if(isGreet)history.push({role:'user',content:prime,hidden:true});
-  history.push({role:'assistant',content:(r.data.reply_he||r.data.reply_en||'').trim(),data:r.data});saveHistory();
-  updateNewWordCounter(r.data);
-  renderCallReply(r.data);
-}
-function renderCallReply(d){
-  addNames(d.names);
-  if(Array.isArray(d.new_words))d.new_words.forEach(w=>{if(w&&w.he)cacheWord(w)});
-  callLastHe=(d.reply_he||'').trim();
-  callVoiced=(d.reply_he_voiced||'').trim()||callLastHe;
-  const cap=document.getElementById('callCaption');cap.innerHTML='';
-  const he=document.createElement('div');he.className='hetext';renderHebrewInto(he,callLastHe||d.reply_en||'…');cap.appendChild(he);
-  const en=document.createElement('div');en.style.cssText='display:none;margin-top:8px;color:var(--muted);direction:ltr';en.innerHTML=esc(d.reply_en||'')+(d.reply_literal?'<div style="margin-top:3px">📝 '+esc(d.reply_literal)+'</div>':'');
-  const tr=document.createElement('button');tr.className='call-end';tr.style.cssText='margin-top:12px;padding:6px 14px;font-size:13px';tr.textContent='🇬🇧 translation';tr.onclick=function(){en.style.display=en.style.display==='none'?'block':'none'};
-  cap.appendChild(tr);cap.appendChild(en);
-  setOrb('speaking');
-  callSpeak(callVoiced,function(){if(callOn)setOrb('idle')});
-}
-async function speakThen(text,cb){if(!text){if(cb)cb();return}const url=await ttsUrl(text,false);if(url)await playUrlAwait(url);else deviceSpeak(text);if(cb)cb()}
-function callUserSaid(text){document.getElementById('callYou').textContent='🗣️ '+text;history.push({role:'user',content:text});saveHistory();callTutorTurn(null,false)}
-function callSlower(){if(callVoiced){setOrb('speaking');callSpeak(callVoiced,function(){if(callOn)setOrb('idle')},true)}}
-async function callHelp(){const kn=knownList();setOrb('thinking');const d=await simpleAI(`The learner is on a Hebrew voice call and is stuck. Suggest ONE short, natural thing they could say next in Hebrew using ONLY words they know: ${kn.length?kn.join('; '):'(very few - keep to 1-2 basic words)'}. Use British English spelling. Reply JSON {"he":"","translit":"","en":""}.`,'help',0.4);if(callOn)setOrb('idle');if(d&&d.he)document.getElementById('callYou').innerHTML='💡 Try: <b class="hetext">'+esc(d.he)+'</b> <span style="opacity:.8">('+esc(d.en||'')+')</span>'}
-
-/* ================= boot ================= */
-function bootMain(){
-  buildKb();rebuildKnown();rebuildNames();refreshCounters();fillSettings();applyAnim();
-  const alive=history.filter(h=>!h.hidden);
-  if(alive.length){document.getElementById('chatScroll').innerHTML='';alive.slice(-12).forEach(h=>{if(h.role==='user')addMe(h.content);else if(h.data)addAI(h.data,true);else{const b=document.createElement('div');b.className='bubble ai';const t=document.createElement('div');t.className='hetext';renderHebrewInto(t,h.content);b.appendChild(t);const row=document.createElement('div');row.className='brow';const sp=document.createElement('button');sp.className='icon-btn';sp.textContent='🔊';sp.onclick=()=>speak(h.content);row.appendChild(sp);b.appendChild(row);chatScroll().appendChild(b)}});scrollDown()}
-  const brandNew=Object.keys(settings.packs||{}).length===0&&words.length===0;
-  if(brandNew)openPack(PACKS[0]);else{renderHome();go('home')}
-}
-document.getElementById('msgInput').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'});
-document.getElementById('msgInput').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg()}});
-
-if(settings.onboarded){document.getElementById('onboard').classList.add('hidden');bootMain()}
-else{document.querySelectorAll('#vowelChoice button').forEach(b=>b.classList.toggle('on',b.dataset.v==='off'));renderDots();showStep()}
+boot();
 </script>
+</body>
+</html>

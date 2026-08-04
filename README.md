@@ -1,62 +1,57 @@
-# Yalla 🇮🇱 - Learn Modern Hebrew by chatting
+# Sababa 🧆 — Learn spoken Hebrew
 
-**Yalla** (יאללה - "let's go!") teaches everyday, conversational Modern Hebrew by having you **chat with an AI tutor** - backed by ordered word packs so you actually build vocabulary instead of drowning.
+**Sababa** (סבבה — Israeli slang for *"cool / all good"*) teaches the Hebrew you'll actually **speak** on a trip to Israel. Instead of flashcards, you drop into a real travel **scenario** — a café, a taxi, the shuk — and an AI tutor plays the person on the other side. You complete a **mission** by talking your way through it, in Hebrew.
 
-It's a single self-contained web page: no install, no build step. Open it in a browser on your phone or computer.
+It's a single self-contained web page (`index.html`): no install, no build step. Open it in a browser on your phone or computer.
 
-## How it works - the learning loop
+> This is an early **prototype**. Feedback welcome.
 
-1. **Learn a pack** (📖 Learn) - a small set of words, taught with cards (see it, hear it, meaning) then quick **practice games**.
-2. **Chat** (💬) - the tutor talks with you using **only the words you know**, dropping in a new word now and then.
-3. Every ~10 messages it asks if you want the **next pack** - say yes to grab more words.
-4. Those new words flow back into the chat, so your vocabulary and the conversation grow together. 📈
+## How it works
+
+1. **Pick a scenario** — e.g. order a coffee, take a taxi to your hotel, haggle at the market.
+2. **The AI opens the scene** in Hebrew, staying in character as the barista / driver / vendor.
+3. **You reply** — in Hebrew (tap the starter chips or the pop-out keyboard if you're stuck, or fall back to English).
+4. Each of the tutor's lines comes with **tap-to-reveal** help: 🔊 hear it, 🔤 pronunciation, 🇬🇧 translation.
+5. Gentle **corrections** nudge your Hebrew, and when you accomplish the **mission** you get a 🎉.
+
+## Scenarios in the prototype
+
+☕ The café · 🚕 The taxi · 🍅 The shuk (market) · 🏨 The hotel · 🧭 Lost in the street · 🧆 Falafel stand
 
 ## Features
 
-- 💬 **Chat tutor** - everyday Modern Hebrew that reacts to you and varies what it says (not just "how are you?").
-- 🧠 **Stays understandable** - the app tracks the words you know and keeps the tutor to those plus, occasionally, one new word. If a reply comes out too hard, the app quietly asks for a simpler one before you see it.
-- 🔵 **Blue words** - any Hebrew word that isn't in your word list yet shows in blue. Tap it to hear it, see its meaning, and save it - once it's in your list it's no longer blue.
-- 📖 **Word packs** - an ordered path (First words → More people → Handy phrases → verbs → food → numbers…), each ending in **practice games** (Hebrew↔English, listen-and-choose) with a score.
-- 🎭 **Scenarios** - role-plays with a mission (café, shop, taxi, market, directions…), with a ✅ at the end.
-- ✏️ **Gentle corrections** and 🔤 **grammar tips** (with a tap-a-verb conjugation table).
-- 📚 **Review** - spaced-repetition review of the words you're still learning.
-- 🧱 **Tap-to-build** - a searchable tray of your words (search by English, Hebrew, or sound); tap to build a reply without typing Hebrew.
-- 💡 **Help me answer** - suggestions built only from words you already know.
-- ⌨️ **Pop-up Hebrew keyboard** - type Hebrew even without a Hebrew phone keyboard.
-- 🔊 **Voice** - the tutor reads Hebrew aloud (made by OpenAI, so it works on any phone).
-- 📞 **Call mode** - a hands-free voice call with the tutor: you speak, it hears you and replies out loud, with live captions you can tap. Tap 📞 in the header or on Home.
-- 🎤 **Speak instead of type** - a mic button in the chat turns your speech into Hebrew text (via OpenAI Whisper) so you can talk instead of typing.
-- 🚹🚺 **Gender-aware** and ✍️ **Hebrew name** - teaches the correct forms and spells your name the way you want.
-- 🔤 **Vowels on/off** (nikud) and a difficulty dial - your choice, changeable any time.
-- 🏠 **Home screen** - your progress (words met, known, packs done) plus quick "carry on" buttons.
-- 💾 **Backup & restore** - save your progress to a file or a code (Settings), and restore it on any device.
-- ✨🔔 **Animations and sound effects** - gentle feedback sounds and a confetti burst on wins. Both toggle on/off in Settings.
+- 💬 **In-character role-play** — talk to a real-feeling Israeli in each scene, not a quiz.
+- 🎯 **Missions** — every scenario has a concrete goal, with a ✓ when you nail it.
+- 🔤 **Training wheels** — per-message pronunciation and translation you reveal only when you need them.
+- 🔊 **Voice** — the tutor's Hebrew is read aloud using your browser's built-in speech (no extra setup).
+- 🪄 **Nikud on/off** — show or hide vowel points; and a **level** dial (beginner → intermediate).
+- 💡 **Starter chips** — tap common phrases to build a reply without a Hebrew keyboard.
+- 💾 **Local-only** — your key, settings, and progress live in your browser, nowhere else.
 
 ## Getting started
 
-1. **Open the app** - from its web link (recommended), or by opening `index.html` in a browser.
-2. First launch: pick vowels/no-vowels, your gender, your name (you can type it in Hebrew), and your interests.
-3. **Add your OpenAI key** (see below). The tutor and voice need it.
-4. You're dropped into **Pack 1** to learn your first words - then start chatting.
+1. **Open the app** — from its web link, or by opening `index.html` in a browser.
+2. Add your **OpenAI API key** (see below), pick your level and nikud preference.
+3. Pick a scenario and start talking.
 
-> Tip: on a phone, use your browser's **"Add to Home Screen"** so Yalla opens full-screen like a normal app - and so you're always on the latest online version rather than a saved copy.
+> Tip: on a phone, use **"Add to Home Screen"** so Sababa opens full-screen like a normal app.
 
 ## The OpenAI key 🔑
 
-The tutor and the voice are powered by OpenAI, so the app needs an API key.
+The tutor is powered by OpenAI, so the app needs an API key.
 
-- Get one from an OpenAI account at **platform.openai.com → API keys → "Create new secret key"**.
-- In Yalla, paste it **once** (during setup, or in **Settings**). It's saved **only on your device** and is **never** put in the code or shared anywhere.
-- Usage costs a small amount against that OpenAI account (the app uses the low-cost `gpt-4o-mini` model for chat and OpenAI's text-to-speech for the voice).
+- Get one at **platform.openai.com → API keys → "Create new secret key"**.
+- Paste it once (setup or **Settings**). It's saved **only on your device** and is never put in the code or shared anywhere.
+- Chat uses the low-cost `gpt-4o-mini` model. Voice uses your browser's free built-in speech.
 
-**Never paste an API key into a chat, a message, or the source code.** If a key is ever exposed, "roll" it - delete it at platform.openai.com and create a new one, then paste the new one into Settings.
+**Never paste an API key into a chat, a message, or the source code.** If a key is exposed, roll it at platform.openai.com and paste the new one into Settings.
 
 ## Privacy
 
-Your words, packs, chat history, settings, and key all live in your browser on your own device - nothing is stored on any server run by this app. Your messages do go to OpenAI (that's what powers the tutor and voice), under your own account.
+Your key, settings, and progress live in your browser on your own device — nothing is stored on any server run by this app. Your messages do go to OpenAI (that's what powers the tutor), under your own account.
 
 ## Tech notes
 
-- Plain HTML/CSS/JS in one file (`index.html`) - no dependencies, no build.
-- Calls the OpenAI Chat Completions and Text-to-Speech APIs directly from the browser using your key.
-- Vocabulary difficulty is enforced **client-side**: the app knows your word list, highlights unmastered words, counts unknown words in each reply, and asks the model to simplify when needed - so difficulty doesn't depend on the model behaving.
+- Plain HTML/CSS/JS in one file (`index.html`) — no dependencies, no build.
+- Calls the OpenAI Chat Completions API directly from the browser using your key, and asks the model for a structured JSON reply (Hebrew + transliteration + translation + correction + mission status).
+- Pronunciation uses the browser's built-in `SpeechSynthesis` (`he-IL`), so voice needs no extra key.
